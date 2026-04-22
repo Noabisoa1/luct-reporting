@@ -1,19 +1,15 @@
-// navigation/AppNavigator.js
-
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-/* ================= AUTH ================= */
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 
-/* ================= STUDENT ================= */
+import StudentAttendance from "../screens/student/StudentAttendance";
 import StudentDashboard from "../screens/student/StudentDashboard";
 import StudentMonitoring from "../screens/student/StudentMonitoring";
 import StudentRating from "../screens/student/StudentRating";
 import StudentRegisterModules from "../screens/student/StudentRegisterModules";
 
-/* ================= LECTURER ================= */
 import LecturerAttendance from "../screens/lecturer/LecturerAttendance";
 import LecturerClasses from "../screens/lecturer/LecturerClasses";
 import LecturerDashboard from "../screens/lecturer/LecturerDashboard";
@@ -22,7 +18,6 @@ import LecturerRating from "../screens/lecturer/LecturerRating";
 import LecturerReportForm from "../screens/lecturer/LecturerReportForm";
 import LecturerReports from "../screens/lecturer/LecturerReports";
 
-/* ================= PRL ================= */
 import PRLClasses from "../screens/prl/PRLClasses";
 import PRLCourses from "../screens/prl/PRLCourses";
 import PRLDashboard from "../screens/prl/PRLDashboard";
@@ -30,7 +25,6 @@ import PRLMonitoring from "../screens/prl/PRLMonitoring";
 import PRLRating from "../screens/prl/PRLRating";
 import PRLReports from "../screens/prl/PRLReports";
 
-/* ================= PL ================= */
 import PLClasses from "../screens/pl/PLClasses";
 import PLCourses from "../screens/pl/PLCourses";
 import PLDashboard from "../screens/pl/PLDashboard";
@@ -58,6 +52,7 @@ export default function AppNavigator() {
         <Stack.Screen name="StudentDashboard" component={StudentDashboard} />
         <Stack.Screen name="StudentMonitoring" component={StudentMonitoring} />
         <Stack.Screen name="StudentRating" component={StudentRating} />
+        <Stack.Screen name="StudentAttendance" component={StudentAttendance} />
         <Stack.Screen name="StudentRegisterModules" component={StudentRegisterModules} />
         <Stack.Screen name="LecturerDashboard" component={LecturerDashboard} />
         <Stack.Screen name="LecturerClasses" component={LecturerClasses} />

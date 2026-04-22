@@ -23,7 +23,6 @@ import {
 
 import { auth, db } from "../../config/firebase";
 
-
 const QUESTIONS = [
   "Was the lecturer prepared for class?",
   "Did the lecturer explain concepts clearly?",
@@ -47,7 +46,6 @@ export default function StudentRating() {
 
   const uid = auth.currentUser.uid;
 
-  
   useEffect(() => {
     const load = async () => {
       const userSnap = await getDoc(doc(db, "users", uid));
@@ -78,14 +76,13 @@ export default function StudentRating() {
     load();
   }, []);
 
-  
   const handleRatingChange = (index, value) => {
     setRatings((prev) => ({
       ...prev,
       [index]: value,
     }));
   };
-  
+
   const submitRating = async () => {
     if (!selectedModule) {
       Alert.alert("Error", "Select a module first");
@@ -128,7 +125,9 @@ export default function StudentRating() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Select Lecturers modules to rate</Text>
+      <Text style={styles.header}>Student Rating</Text>
+
+      <Text style={styles.subtitle}>Select Module</Text>
 
       <FlatList
         data={modules}
@@ -146,28 +145,19 @@ export default function StudentRating() {
               setComment("");
             }}
           >
-            <Text style={styles.name}>{item.moduleName}</Text>
-            <Text style={styles.subText}>
+            <Text style={styles.titleText}>{item.moduleName}</Text>
+            <Text style={styles.text}>
               Lecturer: {item.lecturerName || "Not assigned"}
             </Text>
-            <Text style={styles.subText}>
-              Course: {item.courseName}
-            </Text>
+            <Text style={styles.text}>Course: {item.courseName}</Text>
           </TouchableOpacity>
         )}
       />
 
-
-
-    {/*Rating form*/}
       {selectedModule && (
-        <ScrollView
-          style={styles.formContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          
+        <ScrollView style={styles.formContainer}>
           <View style={styles.headerCard}>
-            <Text style={styles.subtitle}>
+            <Text style={styles.headerText}>
               Rate {selectedModule.lecturerName}
             </Text>
             <Text style={styles.smallText}>
@@ -201,12 +191,14 @@ export default function StudentRating() {
           <View style={styles.commentBox}>
             <TextInput
               placeholder="General Comment (optional)"
+              placeholderTextColor="#94a3b8"
               style={styles.commentInput}
               value={comment}
               onChangeText={setComment}
               multiline
             />
           </View>
+
           <TouchableOpacity style={styles.button} onPress={submitRating}>
             <Text style={styles.btnText}>Submit Rating</Text>
           </TouchableOpacity>
@@ -218,40 +210,51 @@ export default function StudentRating() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 15,
-    backgroundColor: "#f4f6f8",
+    backgroundColor: "#0f172a",
   },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
+  header: {
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 15,
+    color: "#facc15",
+  },
+
+  subtitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#e2e8f0",
     marginBottom: 10,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 10,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   selected: {
     backgroundColor: "#4CAF50",
   },
 
-  name: {
-    fontWeight: "bold",
-    fontSize: 16,
+  titleText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#f8fafc",
+    marginBottom: 3,
   },
 
-  subText: {
-    fontSize: 12,
-    color: "#555",
+  text: {
+    fontSize: 13,
+    color: "#cbd5e1",
   },
 
   formContainer: {
@@ -261,87 +264,90 @@ const styles = StyleSheet.create({
   headerCard: {
     backgroundColor: "#2563eb",
     padding: 15,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 15,
   },
 
-  subtitle: {
-    fontWeight: "bold",
+  headerText: {
     fontSize: 16,
+    fontWeight: "800",
     color: "#fff",
   },
 
   smallText: {
-    color: "#e0e0e0",
+    color: "#e0e7ff",
     fontSize: 12,
     marginTop: 3,
   },
 
   questionCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     marginBottom: 10,
-    elevation: 1,
-    paddingHorizontal: 1,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   question: {
     fontSize: 14,
+    fontWeight: "600",
+    color: "#f1f5f9",
     marginBottom: 10,
-    fontWeight: "500",
   },
 
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingHorizontal: 1,
   },
 
   ratingBtn: {
-    width: 45,
+    width: 42,
     height: 40,
-    borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    borderColor: "#ccc",
-    backgroundColor: "#fafafa",
-    marginHorizontal: 3,
+    backgroundColor: "#0f172a",
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   selectedRating: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
+    backgroundColor: "#16a34a",
+    borderColor: "#16a34a",
   },
 
   ratingText: {
-    fontWeight: "bold",
+    color: "#fff",
+    fontWeight: "700",
   },
 
   commentBox: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     marginTop: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   commentInput: {
     minHeight: 80,
+    color: "#fff",
     textAlignVertical: "top",
   },
 
   button: {
-    backgroundColor: "green",
+    backgroundColor: "#16a34a",
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 12,
     marginTop: 10,
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "800",
   },
 });

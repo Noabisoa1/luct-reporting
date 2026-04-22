@@ -50,6 +50,7 @@ export default function PLMonitoring() {
           id: d.id,
           ...d.data(),
         }));
+
         setStats({
           courses: courseList.length,
           modules: moduleList.length,
@@ -62,9 +63,9 @@ export default function PLMonitoring() {
         setLecturers(lecturerList);
         setReports(reportList);
 
-        setLoading(false);
       } catch (error) {
         console.log(error);
+      } finally {
         setLoading(false);
       }
     };
@@ -73,76 +74,78 @@ export default function PLMonitoring() {
   }, []);
 
   if (loading) {
-    return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#facc15" />
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+
       <Text style={styles.title}>PL Monitoring Dashboard</Text>
 
       <View style={styles.grid}>
         <View style={styles.card}>
           <Text style={styles.num}>{stats.courses}</Text>
-          <Text>Courses</Text>
+          <Text style={styles.label}>Courses</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.num}>{stats.modules}</Text>
-          <Text>Modules</Text>
+          <Text style={styles.label}>Modules</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.num}>{stats.lecturers}</Text>
-          <Text>Lecturers</Text>
+          <Text style={styles.label}>Lecturers</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.num}>{stats.reports}</Text>
-          <Text>Reports</Text>
+          <Text style={styles.label}>Reports</Text>
         </View>
       </View>
 
-<Text style={styles.subtitle}>Classes</Text>
+      <Text style={styles.subtitle}>Classes</Text>
 
-{courses.map(c => {
-  const classLabel = c.classYear
-    ? `${c.courseName}${c.classYear}`
-    : c.courseName;
+      {courses.map(c => {
+        const classLabel = c.classYear
+          ? `${c.courseName}${c.classYear}`
+          : c.courseName;
 
-  return (
-    <View key={c.id} style={styles.listCard}>
-      <Text style={styles.bold}>{classLabel}</Text>
-    </View>
-  );
-})}
+        return (
+          <View key={c.id} style={styles.listCard}>
+            <Text style={styles.bold}>{classLabel}</Text>
+          </View>
+        );
+      })}
 
-      {/* MODULES */}
-<Text style={styles.subtitle}>Modules</Text>
+      <Text style={styles.subtitle}>Modules</Text>
 
-{modules.map(m => {
-  const classLabel = m.courseName && m.classYear
-    ? `${m.courseName}${m.classYear}`
-    : m.courseName;
+      {modules.map(m => {
+        const classLabel = m.courseName && m.classYear
+          ? `${m.courseName}${m.classYear}`
+          : m.courseName;
 
-  return (
-    <View key={m.id} style={styles.listCard}>
-      <Text style={styles.bold}>{m.moduleName}</Text>
-      
-      <Text>Code: {m.moduleCode}</Text>
-      <Text>Class: {classLabel || "Not assigned"}</Text>
-
-      <Text>Lecturer: {m.lecturerName || "Not assigned"}</Text>
-    </View>
-  );
-})}
+        return (
+          <View key={m.id} style={styles.listCard}>
+            <Text style={styles.bold}>{m.moduleName}</Text>
+            <Text style={styles.meta}>Code: {m.moduleCode}</Text>
+            <Text style={styles.meta}>Class: {classLabel || "Not assigned"}</Text>
+            <Text style={styles.meta}>Lecturer: {m.lecturerName || "Not assigned"}</Text>
+          </View>
+        );
+      })}
 
       <Text style={styles.subtitle}>Lecturers</Text>
 
       {lecturers.map(l => (
         <View key={l.id} style={styles.listCard}>
           <Text style={styles.bold}>{l.name}</Text>
-          <Text>Faculty: {l.faculty}</Text>
-          <Text>Stream: {l.stream}</Text>
+          <Text style={styles.meta}>Faculty: {l.faculty}</Text>
+          <Text style={styles.meta}>Stream: {l.stream}</Text>
         </View>
       ))}
 
@@ -151,28 +154,36 @@ export default function PLMonitoring() {
       {reports.map(r => (
         <View key={r.id} style={styles.listCard}>
           <Text style={styles.bold}>{r.lecturerName}</Text>
-          <Text>{r.courseName} - {r.moduleName}</Text>
-          <Text>Week: {r.week}</Text>
-          <Text>
+          <Text style={styles.meta}>{r.courseName} - {r.moduleName}</Text>
+          <Text style={styles.meta}>Week: {r.week}</Text>
+          <Text style={styles.meta}>
             Attendance: {r.attendancePresent}/{r.totalStudents}
           </Text>
         </View>
       ))}
+
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
+
+  loading: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#000000",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
   },
 
   grid: {
@@ -183,35 +194,52 @@ const styles = StyleSheet.create({
 
   card: {
     width: "48%",
-    backgroundColor: "#cabe17",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 12,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   num: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "#2563eb",
+    fontWeight: "800",
+    color: "#38bdf8",
+  },
+
+  label: {
+    color: "#cbd5e1",
+    marginTop: 4,
   },
 
   subtitle: {
     fontSize: 18,
-    color: "#ffd000",
-    fontWeight: "bold",
-    marginTop: 15,
+    color: "#facc15",
+    fontWeight: "700",
+    marginTop: 18,
     marginBottom: 10,
   },
 
   listCard: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 16,
     marginBottom: 10,
   },
 
   bold: {
-    fontWeight: "bold",
+    fontWeight: "700",
+    color: "#e2e8f0",
+    marginBottom: 4,
+  },
+
+  meta: {
+    color: "#94a3b8",
+    fontSize: 13,
   },
 });

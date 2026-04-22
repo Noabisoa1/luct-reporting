@@ -7,7 +7,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -28,10 +28,8 @@ import { auth, db } from "../../config/firebase";
 export default function LecturerReportForm() {
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
-
   const [students, setStudents] = useState([]);
 
- 
   const [week, setWeek] = useState("");
   const [venue, setVenue] = useState("");
   const [topic, setTopic] = useState("");
@@ -92,7 +90,7 @@ export default function LecturerReportForm() {
 
     const snap = await getDocs(q);
 
-    setStudents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   };
 
   const fetchAttendance = async (moduleId) => {
@@ -105,7 +103,7 @@ export default function LecturerReportForm() {
 
     if (!snap.empty) {
       const latest = snap.docs
-        .map(d => d.data())
+        .map((d) => d.data())
         .sort(
           (a, b) =>
             (b.createdAt?.seconds || 0) -
@@ -151,8 +149,8 @@ export default function LecturerReportForm() {
         topic,
         learningOutcomes: outcomes,
         recommendations,
-        attendancePresent: presentCount,
 
+        attendancePresent: presentCount,
         totalStudents:
           selectedModule.studentIds?.length || students.length || 0,
 
@@ -161,6 +159,7 @@ export default function LecturerReportForm() {
       });
 
       Alert.alert("Success", "Report submitted");
+
       setWeek("");
       setVenue("");
       setTopic("");
@@ -169,50 +168,51 @@ export default function LecturerReportForm() {
       setSelectedModule(null);
       setStudents([]);
       setPresentCount(0);
-
     } catch (error) {
       Alert.alert("Error", error.message);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Report Form</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>Lecture Report Form</Text>
       <Text style={styles.subtitle}>Select Module</Text>
 
       <FlatList
         data={modules}
         scrollEnabled={false}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ gap: 10 }}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
               styles.card,
-              selectedModule?.id === item.id && styles.selected,
+              selectedModule?.id === item.id && styles.cardSelected,
             ]}
             onPress={() => handleSelectModule(item)}
           >
-            <Text style={{ fontWeight: "bold" }}>{item.moduleName}</Text>
-            <Text>{item.moduleCode}</Text>
-            <Text>{item.courseName}</Text>
+            <Text style={styles.moduleName}>{item.moduleName}</Text>
+            <Text style={styles.moduleCode}>{item.moduleCode}</Text>
+            <Text style={styles.courseName}>{item.courseName}</Text>
           </TouchableOpacity>
         )}
       />
 
       {selectedModule && (
         <View style={styles.infoBox}>
-          <Text style={{ fontWeight: "bold" }}>
+          <Text style={styles.infoText}>
             Total Students: {students.length}
           </Text>
-
-          <Text style={{ marginTop: 5 }}>
+          <Text style={styles.infoText}>
             Present Students: {presentCount}
           </Text>
         </View>
       )}
 
-      <TouchableOpacity style={styles.input} onPress={() => setShowDate(true)}>
-        <Text>Select Date: {date.toDateString()}</Text>
+      <TouchableOpacity style={styles.selector} onPress={() => setShowDate(true)}>
+        <Text style={styles.selectorText}>
+          Date: {date.toDateString()}
+        </Text>
       </TouchableOpacity>
 
       {showDate && (
@@ -226,8 +226,10 @@ export default function LecturerReportForm() {
         />
       )}
 
-      <TouchableOpacity style={styles.input} onPress={() => setShowTime(true)}>
-        <Text>Select Time: {time.toTimeString().slice(0, 5)}</Text>
+      <TouchableOpacity style={styles.selector} onPress={() => setShowTime(true)}>
+        <Text style={styles.selectorText}>
+          Time: {time.toTimeString().slice(0, 5)}
+        </Text>
       </TouchableOpacity>
 
       {showTime && (
@@ -241,14 +243,50 @@ export default function LecturerReportForm() {
         />
       )}
 
-      <TextInput placeholder="Week" style={styles.input} value={week} onChangeText={setWeek} />
-      <TextInput placeholder="Venue" style={styles.input} value={venue} onChangeText={setVenue} />
-      <TextInput placeholder="Topic" style={styles.input} value={topic} onChangeText={setTopic} />
-      <TextInput placeholder="Learning Outcomes" style={styles.input} value={outcomes} onChangeText={setOutcomes} />
-      <TextInput placeholder="Recommendations" style={styles.input} value={recommendations} onChangeText={setRecommendations} />
+      <TextInput
+        placeholder="Week"
+        placeholderTextColor="#94a3b8"
+        style={styles.input}
+        value={week}
+        onChangeText={setWeek}
+      />
+
+      <TextInput
+        placeholder="Venue"
+        placeholderTextColor="#94a3b8"
+        style={styles.input}
+        value={venue}
+        onChangeText={setVenue}
+      />
+
+      <TextInput
+        placeholder="Topic"
+        placeholderTextColor="#94a3b8"
+        style={styles.input}
+        value={topic}
+        onChangeText={setTopic}
+      />
+
+      <TextInput
+        placeholder="Learning Outcomes"
+        placeholderTextColor="#94a3b8"
+        style={[styles.input, styles.textArea]}
+        multiline
+        value={outcomes}
+        onChangeText={setOutcomes}
+      />
+
+      <TextInput
+        placeholder="Recommendations"
+        placeholderTextColor="#94a3b8"
+        style={[styles.input, styles.textArea]}
+        multiline
+        value={recommendations}
+        onChangeText={setRecommendations}
+      />
 
       <TouchableOpacity style={styles.button} onPress={submitReport}>
-        <Text style={styles.btnText}>Submit Report</Text>
+        <Text style={styles.buttonText}>Submit Report</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -257,60 +295,109 @@ export default function LecturerReportForm() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    backgroundColor: "#0f172a",
+    padding: 16,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
     marginBottom: 10,
   },
 
   subtitle: {
-    fontWeight: "bold",
-    marginTop: 10,
-    marginBottom: 5,
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#94a3b8",
+    marginBottom: 10,
   },
 
   card: {
-    padding: 12,
-    backgroundColor: "#eee",
-    marginBottom: 8,
-    borderRadius: 8,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
-  selected: {
-    backgroundColor: "#4CAF50",
+  cardSelected: {
+    backgroundColor: "#16a34a",
+    borderColor: "#22c55e",
+  },
+
+  moduleName: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#e2e8f0",
+  },
+
+  moduleCode: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 2,
+  },
+
+  courseName: {
+    fontSize: 12,
+    color: "#cbd5f5",
+    marginTop: 2,
   },
 
   infoBox: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginVertical: 15,
     borderLeftWidth: 4,
-    borderLeftColor: "#2563eb",
+    borderLeftColor: "#22c55e",
+  },
+
+  infoText: {
+    color: "#e2e8f0",
+    fontWeight: "600",
+  },
+
+  selector: {
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
+  selectorText: {
+    color: "#e2e8f0",
+    fontWeight: "600",
   },
 
   input: {
+    backgroundColor: "#1e293b",
     borderWidth: 1,
-    padding: 12,
+    borderColor: "#334155",
+    padding: 14,
+    borderRadius: 12,
     marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    color: "#e2e8f0",
+  },
+
+  textArea: {
+    height: 90,
+    textAlignVertical: "top",
   },
 
   button: {
-    backgroundColor: "green",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 15,
+    backgroundColor: "#22c55e",
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 30,
   },
 
-  btnText: {
-    color: "#fff",
+  buttonText: {
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "800",
+    color: "#0f172a",
   },
 });

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -24,7 +25,6 @@ import { auth, db } from "../../config/firebase";
 export default function StudentRegisterModules() {
   const [courses, setCourses] = useState([]);
   const [modules, setModules] = useState([]);
-
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [registered, setRegistered] = useState([]);
 
@@ -44,12 +44,10 @@ export default function StudentRegisterModules() {
     loadCourses();
   }, []);
 
-
   useEffect(() => {
     const loadStudent = async () => {
       const userSnap = await getDoc(doc(db, "users", uid));
       const user = userSnap.data();
-
       setRegistered(user?.registeredModules ?? []);
     };
 
@@ -100,10 +98,7 @@ export default function StudentRegisterModules() {
 
       Alert.alert("Success", "Module registered!");
 
-      setRegistered((prev) => [
-        ...prev,
-        { moduleId: module.id },
-      ]);
+      setRegistered((prev) => [...prev, { moduleId: module.id }]);
     } catch (err) {
       Alert.alert("Error", err.message);
     }
@@ -113,14 +108,17 @@ export default function StudentRegisterModules() {
     registered.some((m) => m.moduleId === id);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>Register Modules</Text>
+
       <Text style={styles.subtitle}>Select Course</Text>
 
       <FlatList
         data={courses}
         horizontal
+        showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingVertical: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -129,9 +127,7 @@ export default function StudentRegisterModules() {
             ]}
             onPress={() => selectCourse(item)}
           >
-            <Text style={{ fontWeight: "bold" }}>
-              {item.courseName}
-            </Text>
+            <Text style={styles.courseText}>{item.courseName}</Text>
           </TouchableOpacity>
         )}
       />
@@ -143,13 +139,16 @@ export default function StudentRegisterModules() {
           <FlatList
             data={modules}
             keyExtractor={(item) => item.id}
+            scrollEnabled={false}
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={styles.name}>
-                  {item.moduleName}
+                <Text style={styles.name}>{item.moduleName}</Text>
+
+                <Text style={styles.meta}>
+                  Code: {item.moduleCode}
                 </Text>
-                <Text>{item.moduleCode}</Text>
-                <Text>
+
+                <Text style={styles.meta}>
                   Lecturer: {item.lecturerName || "Not assigned"}
                 </Text>
 
@@ -162,9 +161,7 @@ export default function StudentRegisterModules() {
                   ]}
                 >
                   <Text style={styles.btnText}>
-                    {isRegistered(item.id)
-                      ? "Registered"
-                      : "Register"}
+                    {isRegistered(item.id) ? "Registered" : "Register"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -172,65 +169,98 @@ export default function StudentRegisterModules() {
           />
         </>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 12,
   },
 
   subtitle: {
-    fontWeight: "bold",
-    marginTop: 10,
-    marginBottom: 5,
+    marginTop: 15,
+    marginBottom: 10,
+    fontWeight: "700",
+    color: "#e2e8f0",
   },
 
   courseCard: {
-    padding: 12,
-    backgroundColor: "#eee",
-    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
     marginRight: 10,
+    width: 140,
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   selected: {
-    backgroundColor: "#4CAF50",
+    borderWidth: 2,
+    borderColor: "#22c55e",
+    backgroundColor: "#1e293b",
+  },
+
+  courseText: {
+    fontWeight: "700",
+    color: "#e2e8f0",
+    textAlign: "center",
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 16,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   name: {
-    fontWeight: "bold",
+    fontWeight: "700",
     fontSize: 16,
+    color: "#e2e8f0",
+  },
+
+  meta: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 4,
   },
 
   btn: {
-    backgroundColor: "green",
-    padding: 10,
+    backgroundColor: "#22c55e",
+    padding: 12,
     marginTop: 10,
-    borderRadius: 8,
+    borderRadius: 12,
   },
 
   disabledBtn: {
-    backgroundColor: "#aaa",
+    backgroundColor: "#475569",
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
+    fontWeight: "700",
   },
 });

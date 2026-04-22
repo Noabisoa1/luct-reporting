@@ -26,19 +26,18 @@ export default function LecturerMonitoring() {
       const ratingSnap = await getDocs(collection(db, "ratings"));
 
       const myReports = reportSnap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(r => r.lecturerId === uid);
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((r) => r.lecturerId === uid);
 
       const myRatings = ratingSnap.docs
-        .map(d => d.data())
-        .filter(r => r.lecturerId === uid);
+        .map((d) => d.data())
+        .filter((r) => r.lecturerId === uid);
 
-     
       const reportCount = myReports.length;
 
       let attendanceTotal = 0;
 
-      myReports.forEach(r => {
+      myReports.forEach((r) => {
         const rate =
           (r.attendancePresent || 0) /
           (r.totalStudents || 1);
@@ -48,13 +47,13 @@ export default function LecturerMonitoring() {
 
       const avgAttendance =
         reportCount > 0 ? attendanceTotal / reportCount : 0;
+
       let totalRating = 0;
       let ratingCount = 0;
 
-      myRatings.forEach(r => {
+      myRatings.forEach((r) => {
         const values = Object.values(r.ratings || {});
-
-        values.forEach(v => {
+        values.forEach((v) => {
           totalRating += v;
           ratingCount += 1;
         });
@@ -62,6 +61,7 @@ export default function LecturerMonitoring() {
 
       const avgRating =
         ratingCount > 0 ? totalRating / ratingCount : 0;
+
       setData({
         name: auth.currentUser.displayName || "Lecturer",
         reportCount,
@@ -83,19 +83,23 @@ export default function LecturerMonitoring() {
   };
 
   const getColor = (status) => {
-    if (status === "Good") return "#16a34a";
-    if (status === "Warning") return "#f59e0b";
-    return "#dc2626";
+    if (status === "Good") return "#22c55e";
+    if (status === "Warning") return "#facc15";
+    return "#ef4444";
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
   }
 
   if (!data) {
     return (
-      <View style={styles.container}>
-        <Text>No data found</Text>
+      <View style={styles.center}>
+        <Text style={styles.empty}>No data found</Text>
       </View>
     );
   }
@@ -109,26 +113,35 @@ export default function LecturerMonitoring() {
       <View style={styles.card}>
         <Text style={styles.name}>{data.name}</Text>
 
-        <Text style={styles.metric}>
-          Reports Submitted: {data.reportCount}
-        </Text>
+        <View style={styles.metricBox}>
+          <Text style={styles.label}>Reports Submitted</Text>
+          <Text style={styles.value}>{data.reportCount}</Text>
+        </View>
 
-        <Text style={styles.metric}>
-          Average Attendance: {(data.avgAttendance * 100).toFixed(1)}%
-        </Text>
+        <View style={styles.metricBox}>
+          <Text style={styles.label}>Average Attendance</Text>
+          <Text style={styles.value}>
+            {(data.avgAttendance * 100).toFixed(1)}%
+          </Text>
+        </View>
 
-        <Text style={styles.metric}>
-          Average Student Rating: {data.avgRating.toFixed(2)} / 5
-        </Text>
+        <View style={styles.metricBox}>
+          <Text style={styles.label}>Average Rating</Text>
+          <Text style={styles.value}>
+            {data.avgRating.toFixed(2)} / 5
+          </Text>
+        </View>
 
-        <Text
+        <View
           style={[
-            styles.status,
-            { color: getColor(status) },
+            styles.statusBox,
+            { borderColor: getColor(status) },
           ]}
         >
-          Status: {status}
-        </Text>
+          <Text style={[styles.statusText, { color: getColor(status) }]}>
+            {status}
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -137,36 +150,69 @@ export default function LecturerMonitoring() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0f172a",
     padding: 15,
-    backgroundColor: "#f4f6f8",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
     marginBottom: 15,
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: "#1e293b",
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   name: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#f1f5f9",
+    marginBottom: 15,
+  },
+
+  metricBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+
+  label: {
+    color: "#94a3b8",
+  },
+
+  value: {
+    color: "#e2e8f0",
+    fontWeight: "700",
+  },
+
+  statusBox: {
+    marginTop: 15,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+
+  statusText: {
     fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontWeight: "800",
   },
 
-  metric: {
-    marginBottom: 6,
-    fontSize: 14,
+  empty: {
+    color: "#94a3b8",
   },
 
-  status: {
-    marginTop: 10,
-    fontWeight: "bold",
-    fontSize: 16,
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

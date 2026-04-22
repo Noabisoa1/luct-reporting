@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -59,7 +59,6 @@ export default function PLAssignLecturers() {
     setModules(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
 
- 
   const handleAssign = async () => {
     if (!selectedModule || !selectedLecturer) {
       Alert.alert("Error", "Select module and lecturer");
@@ -86,7 +85,9 @@ export default function PLAssignLecturers() {
       setSelectedModule(null);
       setSelectedLecturer(null);
 
-      loadModules(selectedCourse.id);
+      if (selectedCourse?.id) {
+        loadModules(selectedCourse.id);
+      }
 
     } catch (error) {
       Alert.alert("Error", error.message);
@@ -94,123 +95,155 @@ export default function PLAssignLecturers() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+
       <Text style={styles.title}>Assign Lecturers</Text>
 
-      {/* COURSES */}
       <Text style={styles.subtitle}>Select Course</Text>
 
-      <FlatList
-  data={courses}
-  keyExtractor={(item) => item.id}
-  renderItem={({ item }) => {
-    const classLabel = item.classYear
-      ? `${item.courseName}${item.classYear}`
-      : item.courseName;
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.row}>
+          {courses.map((item) => {
+            const classLabel = item.classYear
+              ? `${item.courseName}${item.classYear}`
+              : item.courseName;
 
-    return (
-      <TouchableOpacity
-        style={[
-          styles.card,
-          selectedCourse?.id === item.id && styles.selected,
-        ]}
-        onPress={() => {
-          setSelectedCourse(item);
-          loadModules(item.id);
-        }}
-      >
-        <Text style={{ fontWeight: "bold" }}>
-          {classLabel}
-        </Text>
-      </TouchableOpacity>
-    );
-  }}
-/>
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.card,
+                  selectedCourse?.id === item.id && styles.selected,
+                ]}
+                onPress={() => {
+                  setSelectedCourse(item);
+                  loadModules(item.id);
+                }}
+              >
+                <Text style={styles.cardTitle}>{classLabel}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
 
       {selectedCourse && (
         <>
           <Text style={styles.subtitle}>Modules</Text>
-          <FlatList
-            data={modules}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.card,
-                  selectedModule?.id === item.id && styles.selected,
-                ]}
-                onPress={() => setSelectedModule(item)}
-              >
-                <Text style={{ fontWeight: "bold" }}>
-                  {item.moduleName}
-                </Text>
-                <Text style={{ fontSize: 12 }}>
-                  Code: {item.moduleCode}
-                </Text>
-                <Text style={{ fontSize: 12 }}>
-                  Lecturer: {item.lecturerName || "Not assigned"}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
+
+          {modules.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.card,
+                selectedModule?.id === item.id && styles.selected,
+              ]}
+              onPress={() => setSelectedModule(item)}
+            >
+              <Text style={styles.cardTitle}>{item.moduleName}</Text>
+              <Text style={styles.meta}>Code: {item.moduleCode}</Text>
+              <Text style={styles.meta}>
+                Lecturer: {item.lecturerName || "Not assigned"}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </>
       )}
-      <Text style={styles.subtitle}>Select Lecturer</Text>
-      <FlatList
-        data={lecturers}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.card,
-              selectedLecturer?.id === item.id && styles.selected,
-            ]}
-            onPress={() => setSelectedLecturer(item)}
-          >
-            <Text>{item.name}</Text>
-            <Text style={{ fontSize: 12 }}>
-              Faculty: {item.faculty}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
 
-      {/* ASSIGN */}
+      <Text style={styles.subtitle}>Lecturers</Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.row}>
+          {lecturers.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.card,
+                selectedLecturer?.id === item.id && styles.selected,
+              ]}
+              onPress={() => setSelectedLecturer(item)}
+            >
+              <Text style={styles.cardTitle}>{item.name}</Text>
+              <Text style={styles.meta}>{item.faculty}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
       <TouchableOpacity style={styles.button} onPress={handleAssign}>
         <Text style={styles.btnText}>Assign Lecturer</Text>
       </TouchableOpacity>
-    </View>
+
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#000000" },
+  container: {
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
 
-  title: { fontSize: 22, color:'#ffd000', fontWeight: "bold", marginBottom: 10 },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 12,
+  },
 
-  subtitle: { color:'#ffd000', marginTop: 10, fontWeight: "bold" },
+  subtitle: {
+    marginTop: 15,
+    marginBottom: 10,
+    fontWeight: "700",
+    color: "#e2e8f0",
+  },
+
+  row: {
+    flexDirection: "row",
+    gap: 10,
+  },
 
   card: {
-    padding: 12,
-    backgroundColor: "#eee",
-    marginBottom: 8,
-    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#1e293b",
+    marginRight: 10,
+    marginBottom: 10,
+    borderRadius: 16,
+    minWidth: 140,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   selected: {
-    backgroundColor: "#44fa9f",
+    borderWidth: 2,
+    borderColor: "#22c55e",
+  },
+
+  cardTitle: {
+    fontWeight: "700",
+    color: "#e2e8f0",
+    fontSize: 14,
+  },
+
+  meta: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 4,
   },
 
   button: {
-    backgroundColor: "green",
-    padding: 14,
-    marginTop: 15,
-    borderRadius: 8,
+    backgroundColor: "#22c55e",
+    padding: 16,
+    marginTop: 20,
+    borderRadius: 14,
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "700",
   },
 });

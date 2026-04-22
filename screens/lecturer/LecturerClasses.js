@@ -66,7 +66,7 @@ export default function LecturerClasses() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="green" />
+        <ActivityIndicator size="large" color="#22c55e" />
       </View>
     );
   }
@@ -76,31 +76,34 @@ export default function LecturerClasses() {
       <Text style={styles.title}>My Classes</Text>
 
       {userData && (
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Name: {userData.name}</Text>
-          <Text style={styles.infoText}>Faculty: {userData.faculty}</Text>
-          <Text style={styles.infoText}>Stream: {userData.stream}</Text>
+        <View style={styles.profileCard}>
+          <Text style={styles.profileName}>{userData.name}</Text>
+          <Text style={styles.profileText}>Faculty: {userData.faculty}</Text>
+          <Text style={styles.profileText}>Stream: {userData.stream}</Text>
         </View>
       )}
 
       <FlatList
         data={modules}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 20 }}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.name}>{item.moduleName}</Text>
+            <View style={styles.row}>
+              <Text style={styles.moduleName}>{item.moduleName}</Text>
+              <Text style={[
+                styles.badge,
+                { backgroundColor: item.lecturerId ? "#16a34a" : "#ef4444" }
+              ]}>
+                {item.lecturerId ? "Assigned" : "Unassigned"}
+              </Text>
+            </View>
 
-            <Text>Code: {item.moduleCode}</Text>
-            <Text>Course: {item.courseName}</Text>
+            <Text style={styles.text}>Code: {item.moduleCode}</Text>
+            <Text style={styles.text}>Course: {item.courseName}</Text>
 
-            <Text>
-              Students: {item.studentIds?.length || 0}
-            </Text>
-
-            <Text style={styles.status}>
-              {item.lecturerId
-                ? "Assigned"
-                : "Not Assigned"}
+            <Text style={styles.meta}>
+              Students Enrolled: {item.studentIds?.length || 0}
             </Text>
           </View>
         )}
@@ -112,52 +115,87 @@ export default function LecturerClasses() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 12,
   },
 
-  infoBox: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: "green",
+  profileCard: {
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 14,
   },
 
-  infoText: {
+  profileName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#e2e8f0",
+    marginBottom: 4,
+  },
+
+  profileText: {
+    color: "#94a3b8",
     fontSize: 13,
-    color: "#333",
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 2,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
-  name: {
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
+  moduleName: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "800",
+    color: "#e2e8f0",
+    flex: 1,
+    paddingRight: 10,
   },
 
-  status: {
-    marginTop: 5,
-    fontWeight: "bold",
-    color: "#2563eb",
+  badge: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+
+  text: {
+    color: "#cbd5e1",
+    fontSize: 13,
+    marginTop: 2,
+  },
+
+  meta: {
+    marginTop: 8,
+    fontWeight: "700",
+    color: "#38bdf8",
+    fontSize: 12,
   },
 });

@@ -30,15 +30,14 @@ export default function PLRatings() {
         const name = r.lecturerName || "Unknown";
 
         if (!lecturerMap[name]) {
-          lecturerMap[name] = {
-            total: 0,
-            count: 0,
-          };
+          lecturerMap[name] = { total: 0, count: 0 };
         }
 
         const values = Object.values(r.ratings || {});
         const avg =
-          values.reduce((a, b) => a + b, 0) / values.length;
+          values.length > 0
+            ? values.reduce((a, b) => a + b, 0) / values.length
+            : 0;
 
         lecturerMap[name].total += avg;
         lecturerMap[name].count += 1;
@@ -58,26 +57,32 @@ export default function PLRatings() {
       result.sort((a, b) => b.average - a.average);
 
       setData(result);
-      setLoading(false);
     } catch (err) {
       console.log(err);
+    } finally {
       setLoading(false);
     }
   };
 
   const getPerformance = (score) => {
+    if (score >= 4.5) return "Outstanding";
     if (score >= 4) return "Excellent";
     if (score >= 3) return "Good";
+    if (score >= 2) return "Average";
     return "Needs Improvement";
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#facc15" />
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}> Ratings</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Lecturer Ratings</Text>
 
       {data.map((item, index) => {
         const widthPercent = (item.average / 5) * 100;
@@ -90,7 +95,7 @@ export default function PLRatings() {
             </Text>
 
             <Text style={styles.meta}>
-              Students Rated: {item.count}
+              Ratings Count: {item.count}
             </Text>
 
             <View style={styles.barBackground}>
@@ -117,60 +122,73 @@ export default function PLRatings() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
+
+  loading: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
     marginBottom: 15,
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   name: {
-    fontWeight: "bold",
+    fontWeight: "700",
     fontSize: 16,
-    marginBottom: 5,
+    color: "#e2e8f0",
+    marginBottom: 6,
   },
 
   meta: {
     fontSize: 12,
-    color: "#555",
-    marginBottom: 5,
+    color: "#94a3b8",
+    marginBottom: 6,
   },
 
   barBackground: {
     height: 12,
-    backgroundColor: "#ddd",
+    backgroundColor: "#334155",
     borderRadius: 10,
     overflow: "hidden",
-    marginTop: 5,
+    marginTop: 6,
   },
 
   barFill: {
     height: 12,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#22c55e",
   },
 
   score: {
-    marginTop: 6,
-    fontWeight: "bold",
+    marginTop: 8,
+    fontWeight: "700",
+    color: "#38bdf8",
   },
 
   performance: {
     marginTop: 5,
-    fontWeight: "bold",
-    color: "#2563eb",
+    fontWeight: "700",
+    color: "#facc15",
   },
 });

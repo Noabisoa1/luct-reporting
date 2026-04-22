@@ -3,7 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 
 import {
@@ -25,7 +25,6 @@ export default function StudentMonitoring() {
 
   useEffect(() => {
     const loadData = async () => {
-    
       const userSnap = await getDoc(doc(db, "users", uid));
       const user = userSnap.data();
 
@@ -68,16 +67,16 @@ export default function StudentMonitoring() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>My Learning Progress</Text>
+      <Text style={styles.header}>Student Dashboard</Text>
 
       <Text style={styles.subtitle}>My Modules</Text>
 
       {modules.map((m) => (
         <View key={m.id} style={styles.card}>
-          <Text style={styles.name}>{m.moduleName}</Text>
-          <Text>Code: {m.moduleCode}</Text>
-          <Text>Lecturer: {m.lecturerName}</Text>
-          <Text>Course: {m.courseName}</Text>
+          <Text style={styles.titleText}>{m.moduleName}</Text>
+          <Text style={styles.text}>Code: {m.moduleCode}</Text>
+          <Text style={styles.text}>Lecturer: {m.lecturerName}</Text>
+          <Text style={styles.text}>Course: {m.courseName}</Text>
         </View>
       ))}
 
@@ -85,13 +84,15 @@ export default function StudentMonitoring() {
 
       {reports.map((r) => (
         <View key={r.id} style={styles.reportCard}>
-          <Text style={styles.bold}>Module: {r.moduleName}</Text>
-          <Text>Topic: {r.topic}</Text>
-          <Text>Week: {r.week}</Text>
-          <Text>
+          <Text style={styles.titleText}>Module: {r.moduleName}</Text>
+          <Text style={styles.text}>Topic: {r.topic}</Text>
+          <Text style={styles.text}>Week: {r.week}</Text>
+          <Text style={styles.text}>
             Attendance: {r.attendancePresent}/{r.totalStudents}
           </Text>
-          <Text>Feedback: {r.prlFeedback || "No feedback yet"}</Text>
+          <Text style={styles.feedback}>
+            {r.prlFeedback || "No feedback yet"}
+          </Text>
         </View>
       ))}
     </ScrollView>
@@ -102,42 +103,61 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 15,
-    backgroundColor: "#f4f6f8",
+    backgroundColor: "#0f172a",
   },
 
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+  header: {
+    fontSize: 28,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#facc15",
+    letterSpacing: 1,
   },
 
   subtitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginTop: 15,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 10,
     marginBottom: 10,
+    color: "#e2e8f0",
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   reportCard: {
-    backgroundColor: "#eef2ff",
+    backgroundColor: "#0b1220",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
-  name: {
-    fontWeight: "bold",
-    fontSize: 16,
+  titleText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#f8fafc",
+    marginBottom: 4,
   },
 
-  bold: {
-    fontWeight: "bold",
+  text: {
+    fontSize: 13,
+    color: "#cbd5e1",
+    marginBottom: 2,
+  },
+
+  feedback: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#38bdf8",
   },
 });

@@ -27,6 +27,7 @@ export default function PRLReports() {
   const [filterText, setFilterText] = useState("");
 
   const user = auth.currentUser;
+
   useEffect(() => {
     const load = async () => {
       const userSnap = await getDocs(
@@ -43,8 +44,7 @@ export default function PRLReports() {
       }));
 
       data = data.filter(
-        (r) =>
-          r.faculty === prl?.faculty || r.stream === prl?.stream
+        (r) => r.faculty === prl?.faculty || r.stream === prl?.stream
       );
 
       setReports(data);
@@ -79,7 +79,6 @@ export default function PRLReports() {
     });
   };
 
-  
   const submitFeedback = async (id) => {
     try {
       const feedback = feedbackMap[id];
@@ -92,7 +91,7 @@ export default function PRLReports() {
       await updateDoc(doc(db, "reports", id), {
         prlFeedback: feedback,
       });
-      
+
       const updatedReports = reports.map((r) =>
         r.id === id ? { ...r, prlFeedback: feedback } : r
       );
@@ -104,12 +103,12 @@ export default function PRLReports() {
       setReports(updatedReports);
       setFilteredReports(updatedFiltered);
 
-      Alert.alert("Success", "Feedback submitted");
       setFeedbackMap({
         ...feedbackMap,
         [id]: "",
       });
 
+      Alert.alert("Success", "Feedback submitted");
     } catch (err) {
       Alert.alert("Error", err.message);
     }
@@ -118,8 +117,10 @@ export default function PRLReports() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Reports</Text>
+
       <TextInput
         placeholder="Search course, module or lecturer..."
+        placeholderTextColor="#94a3b8"
         style={styles.search}
         value={filterText}
         onChangeText={setFilterText}
@@ -130,48 +131,46 @@ export default function PRLReports() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-
             <Text style={styles.bold}>
               {item.courseName} - {item.moduleName}
             </Text>
 
-            <Text>Lecturer: {item.lecturerName}</Text>
-            <Text>Faculty: {item.faculty}</Text>
+            <Text style={styles.meta}>Lecturer: {item.lecturerName}</Text>
+            <Text style={styles.meta}>Faculty: {item.faculty}</Text>
 
-            <Text>Week: {item.week}</Text>
-            <Text>Date: {item.date}</Text>
-            <Text>Venue: {item.venue}</Text>
-            <Text>Time: {item.scheduledTime}</Text>
+            <Text style={styles.meta}>Week: {item.week}</Text>
+            <Text style={styles.meta}>Date: {item.date}</Text>
+            <Text style={styles.meta}>Venue: {item.venue}</Text>
+            <Text style={styles.meta}>Time: {item.scheduledTime}</Text>
 
-            <Text style={styles.section}>Topic:</Text>
-            <Text>{item.topic}</Text>
+            <Text style={styles.section}>Topic</Text>
+            <Text style={styles.text}>{item.topic}</Text>
 
-            <Text style={styles.section}>Learning Outcomes:</Text>
-            <Text>{item.learningOutcomes}</Text>
+            <Text style={styles.section}>Learning Outcomes</Text>
+            <Text style={styles.text}>{item.learningOutcomes}</Text>
 
-            <Text style={styles.section}>Recommendations:</Text>
-            <Text>{item.recommendations}</Text>
+            <Text style={styles.section}>Recommendations</Text>
+            <Text style={styles.text}>{item.recommendations}</Text>
 
             <Text style={styles.attendance}>
               Attendance: {item.attendancePresent} / {item.totalStudents}
             </Text>
 
             <View style={styles.feedbackBox}>
-              <Text style={styles.section}>Feedback:</Text>
+              <Text style={styles.section}>Feedback</Text>
 
               {item.prlFeedback ? (
                 <Text style={styles.feedbackText}>
                   {item.prlFeedback}
                 </Text>
               ) : (
-                <Text style={styles.noFeedback}>
-                  No feedback yet
-                </Text>
+                <Text style={styles.noFeedback}>No feedback yet</Text>
               )}
             </View>
 
             <TextInput
               placeholder="Write feedback..."
+              placeholderTextColor="#94a3b8"
               style={styles.input}
               value={feedbackMap[item.id] || ""}
               onChangeText={(text) =>
@@ -185,7 +184,6 @@ export default function PRLReports() {
             >
               <Text style={styles.btnText}>Submit Feedback</Text>
             </TouchableOpacity>
-
           </View>
         )}
       />
@@ -193,88 +191,105 @@ export default function PRLReports() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 12,
   },
 
   search: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#1e293b",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    color: "#e2e8f0",
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   bold: {
-    fontWeight: "bold",
+    fontWeight: "800",
     fontSize: 16,
-    marginBottom: 5,
+    color: "#e2e8f0",
+    marginBottom: 6,
+  },
+
+  meta: {
+    color: "#94a3b8",
+    fontSize: 12,
+    marginTop: 2,
   },
 
   section: {
-    marginTop: 5,
-    fontWeight: "bold",
+    marginTop: 10,
+    fontWeight: "700",
+    color: "#e2e8f0",
+  },
+
+  text: {
+    color: "#cbd5f5",
+    marginTop: 2,
   },
 
   attendance: {
-    marginTop: 8,
-    fontWeight: "bold",
-    color: "#2563eb",
+    marginTop: 10,
+    fontWeight: "700",
+    color: "#22c55e",
   },
 
   feedbackBox: {
-    backgroundColor: "#eef4ff",
+    backgroundColor: "#0b1220",
     padding: 10,
-    borderRadius: 8,
+    borderRadius: 12,
     marginTop: 10,
   },
 
   feedbackText: {
-    color: "#2563eb",
-    fontWeight: "500",
+    color: "#38bdf8",
+    fontWeight: "600",
   },
 
   noFeedback: {
-    color: "gray",
+    color: "#94a3b8",
     fontStyle: "italic",
   },
 
   input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: "#0b1220",
+    padding: 12,
+    borderRadius: 12,
     marginTop: 10,
+    color: "#e2e8f0",
   },
 
   button: {
-    backgroundColor: "green",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: "#22c55e",
+    padding: 14,
+    borderRadius: 12,
     marginTop: 10,
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "800",
   },
 });

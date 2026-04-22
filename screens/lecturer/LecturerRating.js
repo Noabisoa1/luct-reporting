@@ -9,11 +9,7 @@ import {
   View,
 } from "react-native";
 
-import {
-  collection,
-  getDocs,
-} from "firebase/firestore";
-
+import { collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../../config/firebase";
 
 const QUESTIONS = [
@@ -26,7 +22,7 @@ const QUESTIONS = [
   "Punctual",
   "Helpful materials",
   "Answered questions",
-  "Overall satisfaction"
+  "Overall satisfaction",
 ];
 
 export default function LecturerRatings() {
@@ -45,26 +41,23 @@ export default function LecturerRatings() {
     try {
       const snap = await getDocs(collection(db, "ratings"));
 
-      const all = snap.docs.map(doc => ({
+      const all = snap.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
 
-      const lecturerRatings = all.filter(
-        r => r.lecturerId === uid
-      );
+      const lecturerRatings = all.filter((r) => r.lecturerId === uid);
 
       setRatings(lecturerRatings);
 
       const uniqueModules = [
         ...new Map(
-          lecturerRatings.map(r => [r.moduleId, r])
-        ).values()
+          lecturerRatings.map((r) => [r.moduleId, r])
+        ).values(),
       ];
 
       setModules(uniqueModules);
       setLoading(false);
-
     } catch (err) {
       console.log(err);
       setLoading(false);
@@ -73,31 +66,34 @@ export default function LecturerRatings() {
 
   const calculateAverages = () => {
     const moduleRatings = ratings.filter(
-      r => r.moduleId === selectedModule.moduleId
+      (r) => r.moduleId === selectedModule.moduleId
     );
 
     const totals = Array(QUESTIONS.length).fill(0);
-    let count = moduleRatings.length;
+    const count = moduleRatings.length;
 
-    moduleRatings.forEach(r => {
+    moduleRatings.forEach((r) => {
       Object.keys(r.ratings || {}).forEach((key) => {
         totals[key] += r.ratings[key];
       });
     });
 
-    const averages = totals.map(t =>
+    const averages = totals.map((t) =>
       count ? (t / count).toFixed(2) : 0
     );
 
     const overall =
-      averages.reduce((a, b) => a + Number(b), 0) /
-      QUESTIONS.length;
+      averages.reduce((a, b) => a + Number(b), 0) / QUESTIONS.length;
 
     return { averages, overall: overall.toFixed(2), count };
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
   }
 
   return (
@@ -107,6 +103,7 @@ export default function LecturerRatings() {
       <FlatList
         data={modules}
         keyExtractor={(item) => item.moduleId}
+        contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -116,8 +113,8 @@ export default function LecturerRatings() {
             ]}
             onPress={() => setSelectedModule(item)}
           >
-            <Text style={styles.name}>{item.moduleName}</Text>
-            <Text>{item.courseName}</Text>
+            <Text style={styles.moduleName}>{item.moduleName}</Text>
+            <Text style={styles.course}>{item.courseName}</Text>
           </TouchableOpacity>
         )}
       />
@@ -129,22 +126,19 @@ export default function LecturerRatings() {
           </Text>
 
           {(() => {
-            const { averages, overall, count } =
-              calculateAverages();
+            const { averages, overall, count } = calculateAverages();
 
             return (
-              <>
-                <Text style={styles.meta}>
-                  Students Rated: {count}
-                </Text>
+              <View style={styles.summaryBox}>
+                <Text style={styles.meta}>Students Rated: {count}</Text>
 
                 <Text style={styles.overall}>
                   Overall Score: {overall} / 5
                 </Text>
 
                 {QUESTIONS.map((q, i) => (
-                  <View key={i} style={styles.qCard}>
-                    <Text>{q}</Text>
+                  <View key={i} style={styles.questionCard}>
+                    <Text style={styles.question}>{q}</Text>
                     <Text style={styles.score}>
                       {averages[i]} / 5
                     </Text>
@@ -155,10 +149,10 @@ export default function LecturerRatings() {
                   {overall >= 4
                     ? "Excellent teaching performance"
                     : overall >= 3
-                    ? "Good, but room for improvement"
+                    ? "Good performance with room for improvement"
                     : "Needs improvement"}
                 </Text>
-              </>
+              </View>
             );
           })()}
         </ScrollView>
@@ -170,29 +164,44 @@ export default function LecturerRatings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0f172a",
     padding: 15,
-    backgroundColor: "#f4f6f8",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
+  },
+
+  list: {
+    paddingBottom: 10,
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 8,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   selected: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#2563eb",
+    borderColor: "#60a5fa",
   },
 
-  name: {
-    fontWeight: "bold",
+  moduleName: {
+    fontWeight: "800",
+    fontSize: 16,
+    color: "#f1f5f9",
+  },
+
+  course: {
+    color: "#94a3b8",
+    marginTop: 4,
   },
 
   results: {
@@ -200,38 +209,60 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#e2e8f0",
     marginBottom: 10,
+  },
+
+  summaryBox: {
+    backgroundColor: "#1e293b",
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   meta: {
-    marginBottom: 5,
+    color: "#94a3b8",
+    marginBottom: 6,
   },
 
   overall: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#2563eb",
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#38bdf8",
+    marginBottom: 12,
   },
 
-  qCard: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 8,
+  questionCard: {
     flexDirection: "row",
     justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+
+  question: {
+    color: "#e2e8f0",
+    flex: 1,
   },
 
   score: {
-    fontWeight: "bold",
+    fontWeight: "800",
+    color: "#facc15",
   },
 
   insight: {
     marginTop: 15,
-    fontWeight: "bold",
     textAlign: "center",
+    fontWeight: "800",
+    color: "#22c55e",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

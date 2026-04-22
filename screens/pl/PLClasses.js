@@ -22,7 +22,6 @@ export default function PLClasses() {
         const list = snap.docs.map((doc) => {
           const data = doc.data();
 
-          // 🔥 generate course code if not stored
           const courseCode =
             data.courseCode ||
             `${data.courseName || ""}${data.classYear || ""}`;
@@ -35,9 +34,9 @@ export default function PLClasses() {
         });
 
         setCourses(list);
-        setLoading(false);
       } catch (err) {
         console.log(err.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -46,7 +45,11 @@ export default function PLClasses() {
   }, []);
 
   if (loading)
-    return <ActivityIndicator style={{ flex: 1 }} size="large" />;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#facc15" />
+      </View>
+    );
 
   return (
     <View style={styles.container}>
@@ -55,20 +58,21 @@ export default function PLClasses() {
       <FlatList
         data={courses}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.code}>{item.courseCode}</Text>
 
             <Text style={styles.text}>
-              Course: {item.courseName}
+              <Text style={styles.label}>Course:</Text> {item.courseName}
             </Text>
 
             <Text style={styles.text}>
-              Class: {item.classYear}
+              <Text style={styles.label}>Class:</Text> {item.classYear}
             </Text>
 
             <Text style={styles.text}>
-              Faculty: {item.faculty}
+              <Text style={styles.label}>Faculty:</Text> {item.faculty}
             </Text>
           </View>
         )}
@@ -80,32 +84,51 @@ export default function PLClasses() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    elevation: 3,
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
 
   code: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#2563eb",
-    marginBottom: 5,
+    fontWeight: "800",
+    color: "#38bdf8",
+    marginBottom: 8,
   },
 
   text: {
-    color: "#555",
+    color: "#cbd5e1",
+    marginBottom: 4,
+    fontSize: 13,
+  },
+
+  label: {
+    fontWeight: "700",
+    color: "#e2e8f0",
   },
 });

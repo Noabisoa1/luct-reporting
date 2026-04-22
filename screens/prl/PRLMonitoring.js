@@ -82,9 +82,7 @@ export default function PRLMonitoring() {
         const prlIndex = prls.findIndex((p) => p.id === uid);
 
         const totalPRLs = prls.length || 1;
-        const totalLecturers = allLecturers.length;
-
-        const perPRL = Math.ceil(totalLecturers / totalPRLs);
+        const perPRL = Math.ceil(allLecturers.length / totalPRLs);
 
         const start = prlIndex * perPRL;
         const end = start + perPRL;
@@ -94,16 +92,6 @@ export default function PRLMonitoring() {
         setLecturers(assignedLecturers);
 
         const lecturerIds = assignedLecturers.map((l) => l.id);
-
-        if (lecturerIds.length === 0) {
-          setStats({
-            courses: 0,
-            modules: 0,
-            lecturers: 0,
-            reports: 0,
-          });
-          return;
-        }
 
         const modulesQ = query(
           collection(db, "modules"),
@@ -119,11 +107,9 @@ export default function PRLMonitoring() {
 
         setModulesList(modules);
 
-        const courses = [
-          ...new Set(modules.map((m) => m.courseName)),
-        ];
-
+        const courses = [...new Set(modules.map((m) => m.courseName))];
         setCoursesList(courses);
+
         const moduleIds = modules.map((m) => m.id);
 
         let reports = [];
@@ -153,13 +139,13 @@ export default function PRLMonitoring() {
           .slice(0, 5);
 
         setRecentReports(sorted);
+
         setStats({
           courses: courses.length,
           modules: modules.length,
           lecturers: assignedLecturers.length,
           reports: reports.length,
         });
-
       } catch (err) {
         console.log(err.message);
       }
@@ -169,17 +155,16 @@ export default function PRLMonitoring() {
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>PRL Monitoring Dashboard</Text>
 
-      {/* STATS */}
       <View style={styles.grid}>
         <TouchableOpacity
           style={styles.card}
           onPress={() => setShowCourses(!showCourses)}
         >
           <Text style={styles.num}>{stats.courses}</Text>
-          <Text>Courses</Text>
+          <Text style={styles.label}>Courses</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -187,7 +172,7 @@ export default function PRLMonitoring() {
           onPress={() => setShowModules(!showModules)}
         >
           <Text style={styles.num}>{stats.modules}</Text>
-          <Text>Modules</Text>
+          <Text style={styles.label}>Modules</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -195,7 +180,7 @@ export default function PRLMonitoring() {
           onPress={() => setShowLecturers(!showLecturers)}
         >
           <Text style={styles.num}>{stats.lecturers}</Text>
-          <Text>Lecturers</Text>
+          <Text style={styles.label}>Lecturers</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -203,10 +188,9 @@ export default function PRLMonitoring() {
           onPress={() => setShowReports(!showReports)}
         >
           <Text style={styles.num}>{stats.reports}</Text>
-          <Text>Reports</Text>
+          <Text style={styles.label}>Reports</Text>
         </TouchableOpacity>
       </View>
-
 
       {showCourses && (
         <View style={styles.dropdown}>
@@ -223,8 +207,8 @@ export default function PRLMonitoring() {
           {modulesList.map((m) => (
             <View key={m.id} style={styles.dropdownItemBox}>
               <Text style={styles.bold}>{m.moduleName}</Text>
-              <Text>{m.moduleCode}</Text>
-              <Text>{m.courseName}</Text>
+              <Text style={styles.meta}>{m.moduleCode}</Text>
+              <Text style={styles.meta}>{m.courseName}</Text>
             </View>
           ))}
         </View>
@@ -245,8 +229,8 @@ export default function PRLMonitoring() {
           {allReports.map((r) => (
             <View key={r.id} style={styles.dropdownItemBox}>
               <Text style={styles.bold}>{r.lecturerName}</Text>
-              <Text>{r.moduleName}</Text>
-              <Text>Week: {r.week}</Text>
+              <Text style={styles.meta}>{r.moduleName}</Text>
+              <Text style={styles.meta}>Week: {r.week}</Text>
             </View>
           ))}
         </View>
@@ -254,37 +238,33 @@ export default function PRLMonitoring() {
 
       <Text style={styles.subtitle}>Recent Reports</Text>
 
-      {recentReports.length === 0 ? (
-        <Text>No reports available</Text>
-      ) : (
-        recentReports.map((r) => (
-          <View key={r.id} style={styles.reportCard}>
-            <Text style={styles.bold}>{r.lecturerName}</Text>
-            <Text>
-              {r.courseName} - {r.moduleName}
-            </Text>
-            <Text>Week: {r.week}</Text>
-            <Text>
-              Attendance: {r.attendancePresent}/{r.totalStudents}
-            </Text>
-          </View>
-        ))
-      )}
+      {recentReports.map((r) => (
+        <View key={r.id} style={styles.reportCard}>
+          <Text style={styles.bold}>{r.lecturerName}</Text>
+          <Text style={styles.meta}>
+            {r.courseName} - {r.moduleName}
+          </Text>
+          <Text style={styles.meta}>Week: {r.week}</Text>
+          <Text style={styles.meta}>
+            Attendance: {r.attendancePresent}/{r.totalStudents}
+          </Text>
+        </View>
+      ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 15,
-    backgroundColor: "#000000",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10, color: '#ffd900d0',
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 12,
   },
 
   grid: {
@@ -295,53 +275,73 @@ const styles = StyleSheet.create({
 
   card: {
     width: "48%",
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 10,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   num: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "#ffe600",
+    fontWeight: "800",
+    color: "#22c55e",
+  },
+
+  label: {
+    color: "#e2e8f0",
+    marginTop: 5,
+    fontWeight: "600",
   },
 
   subtitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "800",
     marginTop: 15,
-    marginBottom: 10, color: '#fad608',
+    marginBottom: 10,
+    color: "#e2e8f0",
   },
 
   dropdown: {
-    backgroundColor: "#ffffff",
-    padding: 10,
-    borderRadius: 10,
+    backgroundColor: "#1e293b",
+    padding: 12,
+    borderRadius: 14,
     marginBottom: 10,
   },
 
   dropdownItem: {
+    color: "#e2e8f0",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderColor: "#eee",
+    borderBottomColor: "#334155",
   },
 
   dropdownItemBox: {
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderColor: "#eee",
+    borderBottomColor: "#334155",
   },
 
   reportCard: {
-    backgroundColor: "#fff",
+    backgroundColor: "#1e293b",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     marginBottom: 10,
   },
 
   bold: {
-    fontWeight: "bold",
+    fontWeight: "800",
+    color: "#f8fafc",
+  },
+
+  meta: {
+    color: "#94a3b8",
+    fontSize: 12,
+    marginTop: 2,
   },
 });

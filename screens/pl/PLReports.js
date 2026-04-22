@@ -57,6 +57,7 @@ export default function PLReports() {
 
       <TextInput
         placeholder="Search course, module or lecturer..."
+        placeholderTextColor="#94a3b8"
         style={styles.search}
         value={filterText}
         onChangeText={setFilterText}
@@ -65,6 +66,7 @@ export default function PLReports() {
       <FlatList
         data={filteredReports}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={styles.card}>
 
@@ -72,28 +74,34 @@ export default function PLReports() {
               {item.courseName} - {item.moduleName}
             </Text>
 
-            <Text>Lecturer: {item.lecturerName}</Text>
-            <Text>Faculty: {item.faculty}</Text>
+            <Text style={styles.meta}>Lecturer: {item.lecturerName}</Text>
+            <Text style={styles.meta}>Faculty: {item.faculty}</Text>
 
-            <Text>Week: {item.week}</Text>
-            <Text>Date: {item.date}</Text>
-            <Text>Venue: {item.venue}</Text>
-            <Text>Time: {item.scheduledTime}</Text>
+            <View style={styles.row}>
+              <Text style={styles.meta}>Week: {item.week}</Text>
+              <Text style={styles.meta}>Date: {item.date}</Text>
+            </View>
 
-            <Text style={styles.section}>Topic:</Text>
-            <Text>{item.topic}</Text>
+            <View style={styles.row}>
+              <Text style={styles.meta}>Venue: {item.venue}</Text>
+              <Text style={styles.meta}>Time: {item.scheduledTime}</Text>
+            </View>
 
-            <Text style={styles.section}>Learning Outcomes:</Text>
-            <Text>{item.learningOutcomes}</Text>
+            <Text style={styles.section}>Topic</Text>
+            <Text style={styles.text}>{item.topic}</Text>
 
-            <Text style={styles.section}>Recommendations:</Text>
-            <Text>{item.recommendations}</Text>
+            <Text style={styles.section}>Learning Outcomes</Text>
+            <Text style={styles.text}>{item.learningOutcomes}</Text>
+
+            <Text style={styles.section}>Recommendations</Text>
+            <Text style={styles.text}>{item.recommendations}</Text>
 
             <Text style={styles.attendance}>
-              Attendance: {item.attendancePresent} / {item.totalStudents}
+              {item.attendancePresent} / {item.totalStudents} Present
             </Text>
+
             <View style={styles.feedbackBox}>
-              <Text style={styles.section}>PRL Feedback:</Text>
+              <Text style={styles.feedbackTitle}>PRL Feedback</Text>
               <Text style={styles.feedbackText}>
                 {item.prlFeedback}
               </Text>
@@ -109,58 +117,89 @@ export default function PLReports() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
   },
 
   search: {
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#1e293b",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 15,
+    color: "#e2e8f0",
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 18,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
 
   bold: {
-    fontWeight: "bold",
+    fontWeight: "700",
     fontSize: 16,
-    marginBottom: 5,
+    color: "#f1f5f9",
+    marginBottom: 6,
+  },
+
+  meta: {
+    fontSize: 13,
+    color: "#94a3b8",
+    marginBottom: 2,
+  },
+
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 4,
   },
 
   section: {
-    marginTop: 5,
-    fontWeight: "bold",
+    marginTop: 10,
+    fontWeight: "600",
+    color: "#e2e8f0",
+  },
+
+  text: {
+    color: "#cbd5f5",
+    fontSize: 13,
+    marginTop: 2,
   },
 
   attendance: {
-    marginTop: 8,
-    fontWeight: "bold",
-    color: "#2563eb",
+    marginTop: 10,
+    fontWeight: "700",
+    color: "#38bdf8",
   },
 
   feedbackBox: {
-    backgroundColor: "#eef4ff",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
+    backgroundColor: "#020617",
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+
+  feedbackTitle: {
+    fontWeight: "700",
+    color: "#facc15",
+    marginBottom: 4,
   },
 
   feedbackText: {
-    color: "#2563eb",
-    fontWeight: "500",
+    color: "#e2e8f0",
+    fontSize: 13,
   },
 });

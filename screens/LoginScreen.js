@@ -26,35 +26,34 @@ export default function LoginScreen({ navigation }) {
     try {
       setLoading(true);
 
-      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
+      );
+
       const uid = userCredential.user.uid;
 
       const userDoc = await getDoc(doc(db, "users", uid));
 
       if (!userDoc.exists()) {
-        Alert.alert("Error", "User not found in database");
+        Alert.alert("Error", "User not found");
         return;
       }
 
-      const { role } = userDoc.data();
+      const role = userDoc.data()?.role;
 
-      switch (role) {
-        case "student":
-          navigation.replace("StudentDashboard");
-          break;
-        case "lecturer":
-          navigation.replace("LecturerDashboard");
-          break;
-        case "prl":
-          navigation.replace("PRLDashboard");
-          break;
-        case "pl":
-          navigation.replace("PLDashboard");
-          break;
-        default:
-          Alert.alert("Error", "Invalid role");
+      if (role === "student") {
+        navigation.replace("StudentDashboard");
+      } else if (role === "lecturer") {
+        navigation.replace("LecturerDashboard");
+      } else if (role === "prl") {
+        navigation.replace("PRLDashboard");
+      } else if (role === "pl") {
+        navigation.replace("PLDashboard");
+      } else {
+        Alert.alert("Error", "Invalid role");
       }
-
     } catch (error) {
       Alert.alert("Login Error", error.message);
     } finally {
@@ -66,14 +65,30 @@ export default function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <Text style={styles.title}>LUCT Reporting System</Text>
 
-      <TextInput placeholder="Email" style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" />
-      <TextInput placeholder="Password" secureTextEntry style={styles.input} value={password} onChangeText={setPassword} />
+      <TextInput
+        placeholder="Email"
+        style={styles.input}
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+      />
+
+      <TextInput
+        placeholder="Password"
+        secureTextEntry
+        style={styles.input}
+        value={password}
+        onChangeText={setPassword}
+      />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Login</Text>}
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
 
-      {/* 🔥 Go to Register */}
       <TouchableOpacity onPress={() => navigation.navigate("Register")}>
         <Text style={styles.link}>Do not have an account? Register</Text>
       </TouchableOpacity>
@@ -82,39 +97,47 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#0f172a",
+  },
 
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 26,
+    fontWeight: "800",
     marginBottom: 30,
     textAlign: "center",
+    color: "#facc15",
   },
 
   input: {
+    backgroundColor: "#1e293b",
     borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    marginBottom: 15,
-    borderRadius: 10,
+    borderColor: "#334155",
+    padding: 14,
+    marginBottom: 12,
+    borderRadius: 12,
+    color: "#e2e8f0",
   },
 
   button: {
-    backgroundColor: "#0066cc",
+    backgroundColor: "#22c55e",
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
   },
 
   buttonText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "800",
   },
 
   link: {
     marginTop: 15,
     textAlign: "center",
-    color: "#0066cc",
+    color: "#38bdf8",
     fontWeight: "600",
   },
 });

@@ -21,7 +21,6 @@ export default function PRLRating() {
   const fetchRatings = async () => {
     try {
       const snap = await getDocs(collection(db, "ratings"));
-
       const all = snap.docs.map((doc) => doc.data());
 
       const lecturerMap = {};
@@ -35,7 +34,7 @@ export default function PRLRating() {
 
         const values = Object.values(r.ratings || {});
         const avg =
-          values.reduce((a, b) => a + b, 0) / values.length;
+          values.reduce((a, b) => a + b, 0) / (values.length || 1);
 
         lecturerMap[name].total += avg;
         lecturerMap[name].count += 1;
@@ -58,11 +57,17 @@ export default function PRLRating() {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <ActivityIndicator
+        size="large"
+        style={{ flex: 1 }}
+        color="#22c55e"
+      />
+    );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>
         Lecturer Performance (PRL View)
       </Text>
@@ -74,7 +79,6 @@ export default function PRLRating() {
           <View key={index} style={styles.card}>
             <Text style={styles.name}>{item.name}</Text>
 
-            {/* BAR */}
             <View style={styles.barBackground}>
               <View
                 style={[
@@ -96,44 +100,51 @@ export default function PRLRating() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 15,
-    backgroundColor: "#f4f6f8",
+    padding: 16,
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
     marginBottom: 15,
-    textAlign: "center",
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 16,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
 
   name: {
-    fontWeight: "bold",
-    marginBottom: 6,
+    fontWeight: "800",
+    marginBottom: 10,
+    color: "#e2e8f0",
+    fontSize: 16,
   },
 
   barBackground: {
     height: 12,
-    backgroundColor: "#ddd",
+    backgroundColor: "#334155",
     borderRadius: 10,
     overflow: "hidden",
   },
 
   barFill: {
     height: 12,
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#22c55e",
   },
 
   score: {
-    marginTop: 6,
-    fontWeight: "bold",
+    marginTop: 8,
+    fontWeight: "700",
+    color: "#94a3b8",
   },
 });

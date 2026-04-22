@@ -6,7 +6,6 @@ export default function PLDashboard({ navigation }) {
   const menu = [
     { title: "Courses", screen: "PLCourses" },
     { title: "Reports (PRL)", screen: "PLReports" },
-
     { title: "Monitoring", screen: "PLMonitoring" },
     { title: "Classes", screen: "PLClasses" },
     { title: "Lectures", screen: "PLLectures" },
@@ -17,48 +16,88 @@ export default function PLDashboard({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
 
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Program Leader Dashboard</Text>
+        <View>
+          <Text style={styles.smallTitle}>Program Leader</Text>
+          <Text style={styles.title}>Dashboard</Text>
+        </View>
         <Logout navigation={navigation} />
       </View>
 
-      {menu.map((item, index) => (
-        <TouchableOpacity
-          key={index}
-          style={styles.card}
-          onPress={() => navigation.navigate(item.screen)}
-        >
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardSubtitle}>Tap to open</Text>
-        </TouchableOpacity>
-      ))}
+      <View style={styles.grid}>
+        {menu.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.card}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate(item.screen)}
+          >
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardSubtitle}>Open</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#000000" },
-  title: {
-    fontSize: 26,
-    color: '#ffd900',
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 20,
+  container: {
+    flexGrow: 1,
+    padding: 20,
+    backgroundColor: "#0f172a",
   },
-  card: {
-    backgroundColor: "#fff",
-    padding: 18,
-    borderRadius: 12,
-    marginBottom: 15,
-    elevation: 3,
-  },
-  cardTitle: { fontSize: 18, fontWeight: "bold" },
-  cardSubtitle: { color: "#3700ff", marginTop: 5 },
 
   headerRow: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 20,
-},
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 25,
+  },
+
+  smallTitle: {
+    fontSize: 14,
+    color: "#94a3b8",
+  },
+
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#facc15",
+    marginTop: 2,
+  },
+
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+
+  card: {
+    width: "48%",
+    backgroundColor: "#1e293b",
+    paddingVertical: 24,
+    borderRadius: 18,
+    marginBottom: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#e2e8f0",
+    textAlign: "center",
+  },
+
+  cardSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 6,
+  },
 });

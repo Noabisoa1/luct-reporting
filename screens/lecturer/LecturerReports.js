@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -47,7 +47,7 @@ export default function LecturerReports() {
       setReports(data);
       setLoading(false);
     } catch (error) {
-      console.log("Error fetching reports:", error);
+      console.log(error);
       setLoading(false);
     }
   };
@@ -61,20 +61,17 @@ export default function LecturerReports() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>My Submitted Reports</Text>
 
-      <FlatList
-        data={reports}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No reports found</Text>
-        }
-        renderItem={({ item }) => {
+      {reports.length === 0 ? (
+        <Text style={styles.empty}>No reports found</Text>
+      ) : (
+        reports.map((item) => {
           const createdAt = item.createdAt?.toDate?.();
 
           return (
-            <View style={styles.card}>
+            <View key={item.id} style={styles.card}>
               <Text style={styles.module}>
                 {item.moduleName} ({item.moduleCode})
               </Text>
@@ -95,54 +92,55 @@ export default function LecturerReports() {
               </Text>
             </View>
           );
-        }}
-      />
-    </View>
+        })
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     padding: 15,
-    backgroundColor: "#f4f6f8",
+    backgroundColor: "#0f172a",
   },
 
   title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
   },
 
   card: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 12,
   },
 
   module: {
-    fontWeight: "bold",
+    fontWeight: "800",
     fontSize: 16,
-    marginBottom: 4,
+    marginBottom: 6,
+    color: "#e2e8f0",
   },
 
   meta: {
-    marginTop: 5,
-    fontWeight: "bold",
-    color: "#2563eb",
+    marginTop: 6,
+    fontWeight: "700",
+    color: "#38bdf8",
   },
 
   date: {
-    marginTop: 5,
+    marginTop: 6,
     fontSize: 12,
-    color: "gray",
+    color: "#94a3b8",
   },
 
   empty: {
     textAlign: "center",
     marginTop: 20,
-    color: "gray",
+    color: "#94a3b8",
   },
 
   center: {

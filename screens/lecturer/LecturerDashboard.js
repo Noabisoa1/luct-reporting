@@ -28,6 +28,7 @@ export default function LecturerDashboard({ navigation }) {
           <TouchableOpacity
             key={i}
             style={styles.card}
+            activeOpacity={0.8}
             onPress={() => navigation.navigate(item.screen)}
           >
             <Text style={styles.cardTitle}>{item.title}</Text>
@@ -45,17 +46,18 @@ export default function LecturerDashboard({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: "#000000",
     flexGrow: 1,
+    padding: 20,
+    backgroundColor: "#0f172a",
   },
 
   header: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 30,
+    fontWeight: "700",
     textAlign: "center",
-    marginBottom: 20, 
-    color: 'orange',
+    marginBottom: 25,
+    color: "#facc15",
+    letterSpacing: 1,
   },
 
   grid: {
@@ -66,29 +68,43 @@ const styles = StyleSheet.create({
 
   card: {
     width: "48%",
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 15,
-    elevation: 4,
+    backgroundColor: "#1e293b",
+    paddingVertical: 25,
+    borderRadius: 18,
+    marginBottom: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
 
   cardTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
+    color: "#e2e8f0",
     textAlign: "center",
   },
 
   logoutBtn: {
-    marginTop: 20,
-    backgroundColor: "#e74c3c",
-    padding: 15,
-    borderRadius: 12,
+    marginTop: 30,
+    backgroundColor: "#ef4444",
+    paddingVertical: 16,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
   },
 
   logoutText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "700",
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });

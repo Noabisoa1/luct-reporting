@@ -21,7 +21,7 @@ export default function PLCreateCourse() {
 
   const [courseName, setCourseName] = useState("");
   const [faculty, setFaculty] = useState("");
-  const [classYear, setClassYear] = useState(""); 
+  const [classYear, setClassYear] = useState("");
 
   const [modules, setModules] = useState([
     { moduleName: "", moduleCode: "" },
@@ -53,25 +53,22 @@ export default function PLCreateCourse() {
     }
 
     try {
-      const courseCode = `${courseName}${classYear}`; 
+      const courseCode = `${courseName}${classYear}`;
 
-      // CREATE COURSE
       const courseRef = await addDoc(collection(db, "courses"), {
-        courseName,        
-        classYear,         
-        courseCode,        
+        courseName,
+        classYear,
+        courseCode,
         faculty,
         studentIds: [],
         createdAt: serverTimestamp(),
       });
 
-      
       for (let mod of validModules) {
         await addDoc(collection(db, "modules"), {
           courseId: courseRef.id,
-
           courseName,
-          courseCode,     
+          courseCode,
           classYear,
           faculty,
 
@@ -88,7 +85,6 @@ export default function PLCreateCourse() {
 
       Alert.alert("Success", "Course created successfully");
 
-    
       setCourseName("");
       setFaculty("");
       setClassYear("");
@@ -100,11 +96,12 @@ export default function PLCreateCourse() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Create Course</Text>
 
       <TextInput
         placeholder="Faculty (e.g FICT)"
+        placeholderTextColor="#94a3b8"
         style={styles.input}
         value={faculty}
         onChangeText={setFaculty}
@@ -112,6 +109,7 @@ export default function PLCreateCourse() {
 
       <TextInput
         placeholder="Course Name (e.g BSCSM)"
+        placeholderTextColor="#94a3b8"
         style={styles.input}
         value={courseName}
         onChangeText={setCourseName}
@@ -119,6 +117,7 @@ export default function PLCreateCourse() {
 
       <TextInput
         placeholder="Class (e.g Y1, Y2, Y3)"
+        placeholderTextColor="#94a3b8"
         style={styles.input}
         value={classYear}
         onChangeText={setClassYear}
@@ -126,8 +125,8 @@ export default function PLCreateCourse() {
 
       {courseName && classYear && (
         <View style={styles.preview}>
-          <Text style={{ fontWeight: "bold" }}>Preview:</Text>
-          <Text>{courseName + classYear}</Text>
+          <Text style={styles.previewLabel}>Preview</Text>
+          <Text style={styles.previewText}>{courseName + classYear}</Text>
         </View>
       )}
 
@@ -135,12 +134,11 @@ export default function PLCreateCourse() {
 
       {modules.map((mod, index) => (
         <View key={index} style={styles.moduleBox}>
-          <Text style={styles.moduleTitle}>
-            Module {index + 1}
-          </Text>
+          <Text style={styles.moduleTitle}>Module {index + 1}</Text>
 
           <TextInput
             placeholder="Module Name"
+            placeholderTextColor="#94a3b8"
             style={styles.input}
             value={mod.moduleName}
             onChangeText={(text) =>
@@ -150,6 +148,7 @@ export default function PLCreateCourse() {
 
           <TextInput
             placeholder="Module Code"
+            placeholderTextColor="#94a3b8"
             style={styles.input}
             value={mod.moduleCode}
             onChangeText={(text) =>
@@ -160,7 +159,7 @@ export default function PLCreateCourse() {
       ))}
 
       <TouchableOpacity style={styles.addBtn} onPress={addModuleField}>
-        <Text style={styles.btnText}>Add Another Module</Text>
+        <Text style={styles.btnText}>Add Module</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={handleCreate}>
@@ -171,56 +170,84 @@ export default function PLCreateCourse() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#000000" },
+  container: {
+    flexGrow: 1,
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
 
-  title: { fontSize: 22, color:'#fad608', fontWeight: "bold", marginBottom: 10 },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 15,
+  },
 
-  subtitle: { marginTop: 10, fontWeight: "bold", color: '#fad608', },
+  subtitle: {
+    marginTop: 10,
+    fontWeight: "700",
+    color: "#e2e8f0",
+    marginBottom: 10,
+  },
 
   moduleBox: {
-    backgroundColor: "#fff",
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
+    backgroundColor: "#1e293b",
+    padding: 14,
+    marginBottom: 12,
+    borderRadius: 16,
   },
 
   moduleTitle: {
-    fontWeight: "bold",
-    marginBottom: 5,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#e2e8f0",
   },
 
   input: {
+    backgroundColor: "#1e293b",
     borderWidth: 1,
-    padding: 10,
+    borderColor: "#334155",
+    padding: 12,
     marginBottom: 10,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderRadius: 12,
+    color: "#e2e8f0",
   },
 
   preview: {
-    backgroundColor: "#e0f2fe",
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: "#020617",
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 10,
   },
 
+  previewLabel: {
+    color: "#94a3b8",
+    fontSize: 12,
+  },
+
+  previewText: {
+    color: "#facc15",
+    fontWeight: "700",
+    marginTop: 4,
+  },
+
   addBtn: {
-    backgroundColor: "#3498db",
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: "#334155",
+    padding: 14,
+    borderRadius: 14,
     marginTop: 10,
   },
 
   button: {
-    backgroundColor: "green",
-    padding: 14,
+    backgroundColor: "#22c55e",
+    padding: 16,
     marginTop: 15,
-    borderRadius: 8,
+    borderRadius: 14,
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
+    fontWeight: "700",
   },
 });

@@ -86,13 +86,12 @@ export default function LecturerAttendance() {
 
     const initial = {};
     studentList.forEach(s => {
-      initial[s.id] = "present"; 
+      initial[s.id] = "present";
     });
 
     setAttendance(initial);
   };
 
-  
   const markAttendance = (studentId, status) => {
     setAttendance(prev => ({
       ...prev,
@@ -114,15 +113,11 @@ export default function LecturerAttendance() {
       await addDoc(collection(db, "attendance"), {
         moduleId: selectedModule.id,
         moduleName: selectedModule.moduleName,
-
         lecturerId: auth.currentUser.uid,
         lecturerName: auth.currentUser.displayName,
-
         totalStudents: students.length,
         presentCount: presentStudents.length,
-
         records: attendance,
-
         createdAt: serverTimestamp(),
       });
 
@@ -136,7 +131,11 @@ export default function LecturerAttendance() {
     }
   };
 
-  if (loading) return <ActivityIndicator style={{ flex: 1 }} />;
+  if (loading) return (
+    <View style={styles.center}>
+      <ActivityIndicator size="large" color="#22c55e" />
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -154,8 +153,8 @@ export default function LecturerAttendance() {
             ]}
             onPress={() => loadStudents(item)}
           >
-            <Text style={styles.bold}>{item.moduleName}</Text>
-            <Text>{item.moduleCode}</Text>
+            <Text style={styles.moduleName}>{item.moduleName}</Text>
+            <Text style={styles.moduleCode}>{item.moduleCode}</Text>
           </TouchableOpacity>
         )}
       />
@@ -174,18 +173,16 @@ export default function LecturerAttendance() {
 
               return (
                 <View style={styles.studentRow}>
-                  <Text style={{ flex: 1 }}>{item.name}</Text>
+                  <Text style={styles.studentName}>{item.name}</Text>
 
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
                       status === "present" && styles.present,
                     ]}
-                    onPress={() =>
-                      markAttendance(item.id, "present")
-                    }
+                    onPress={() => markAttendance(item.id, "present")}
                   >
-                    <Text>✔</Text>
+                    <Text style={styles.icon}>✔</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -193,11 +190,9 @@ export default function LecturerAttendance() {
                       styles.checkbox,
                       status === "absent" && styles.absent,
                     ]}
-                    onPress={() =>
-                      markAttendance(item.id, "absent")
-                    }
+                    onPress={() => markAttendance(item.id, "absent")}
                   >
-                    <Text>✖</Text>
+                    <Text style={styles.icon}>✖</Text>
                   </TouchableOpacity>
                 </View>
               );
@@ -214,64 +209,107 @@ export default function LecturerAttendance() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#f4f6f8" },
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: "#0f172a",
+  },
 
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+  },
 
-  subtitle: { marginTop: 10, fontWeight: "bold" },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 10,
+  },
+
+  subtitle: {
+    marginTop: 10,
+    fontWeight: "700",
+    fontSize: 14,
+    color: "#94a3b8",
+  },
 
   card: {
-    padding: 12,
-    backgroundColor: "#eee",
-    marginBottom: 8,
-    borderRadius: 8,
+    padding: 14,
+    backgroundColor: "#1e293b",
+    marginBottom: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
 
   selected: {
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#16a34a",
+  },
+
+  moduleName: {
+    fontWeight: "800",
+    color: "#e2e8f0",
+    fontSize: 15,
+  },
+
+  moduleCode: {
+    color: "#94a3b8",
+    marginTop: 2,
   },
 
   studentRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 10,
-    marginBottom: 5,
-    borderRadius: 8,
+    backgroundColor: "#1e293b",
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
+  studentName: {
+    flex: 1,
+    color: "#e2e8f0",
+    fontWeight: "600",
   },
 
   checkbox: {
-    width: 35,
-    height: 35,
+    width: 40,
+    height: 40,
     marginLeft: 10,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 6,
-    backgroundColor: "#ddd",
+    borderRadius: 10,
+    backgroundColor: "#334155",
+  },
+
+  icon: {
+    color: "#fff",
+    fontWeight: "900",
   },
 
   present: {
-    backgroundColor: "green",
+    backgroundColor: "#16a34a",
   },
 
   absent: {
-    backgroundColor: "red",
+    backgroundColor: "#dc2626",
   },
 
   button: {
-    backgroundColor: "green",
-    padding: 14,
+    backgroundColor: "#22c55e",
+    padding: 15,
     marginTop: 15,
-    borderRadius: 8,
+    borderRadius: 14,
   },
 
   btnText: {
     color: "#fff",
     textAlign: "center",
-    fontWeight: "bold",
-  },
-
-  bold: {
-    fontWeight: "bold",
+    fontWeight: "800",
   },
 });
