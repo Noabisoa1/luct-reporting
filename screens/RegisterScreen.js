@@ -1,5 +1,3 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -11,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "../config/firebase";
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState("");
@@ -27,56 +24,50 @@ export default function RegisterScreen({ navigation }) {
 
   const ROLES = ["student", "lecturer", "prl", "pl"];
 
-  const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "All fields required");
-      return;
-    }
+ const handleRegister = async () => {
+  if (!name || !email || !password || !confirmPassword) {
+    Alert.alert("Error", "All fields required");
+    return;
+  }
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
-      return;
-    }
+  if (password !== confirmPassword) {
+    Alert.alert("Error", "Passwords do not match");
+    return;
+  }
 
-    if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
-      return;
-    }
+  try {
+    setLoading(true);
 
-    try {
-      setLoading(true);
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-      const uid = userCredential.user.uid;
-
-      const userData = {
-        uid,
-        name: name.trim(),
-        email: email.trim(),
+    const response = await fetch("http://192.168.156.177:5000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
         role,
-        faculty: faculty.trim(),
-        semester: semester.trim(),
-        createdAt: serverTimestamp(),
-        modules: [],
-        registeredModules: [],
-      };
+        faculty,
+        semester,
+      }),
+    });
 
-      await setDoc(doc(db, "users", uid), userData);
+    const data = await response.json();
 
-      Alert.alert("Success", "Account created!");
-      navigation.replace("Login");
-
-    } catch (error) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(data.message);
     }
-  };
+
+    Alert.alert("Success", "Account created!");
+    navigation.replace("Login");
+
+  } catch (error) {
+    Alert.alert("Error", error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.container}>

@@ -1,12 +1,13 @@
-import { signOut } from "firebase/auth";
 import { Alert, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { auth } from "../config/firebase";
 
 export default function Logout({ navigation }) {
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      navigation.replace("Login");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -24,14 +25,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 20,
     right: 20,
-    backgroundColor: "#2710f5",
+    backgroundColor: "#ef4444",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 12,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   logoutText: {
     color: "#fff",

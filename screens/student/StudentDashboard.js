@@ -1,4 +1,3 @@
-import { doc, getDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ScrollView,
@@ -7,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "../../config/firebase";
+import { auth } from "../../config/firebase";
 import Logout from "../Logout";
 
 export default function StudentDashboard({ navigation }) {
@@ -15,14 +14,30 @@ export default function StudentDashboard({ navigation }) {
 
   useEffect(() => {
     const fetchStudent = async () => {
-      const uid = auth.currentUser.uid;
-      const docSnap = await getDoc(doc(db, "users", uid));
-      if (docSnap.exists()) setStudentData(docSnap.data());
+      try {
+        const uid = auth.currentUser.uid;
+
+        const response = await fetch(
+          `http://192.168.156.177:5000/api/users/${uid}`
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setStudentData(data);
+        } else {
+          console.log(data.message);
+        }
+      } catch (error) {
+        console.log("Fetch error:", error.message);
+      }
     };
+
     fetchStudent();
   }, []);
 
-  if (!studentData) return <Text style={styles.loading}>Loading...</Text>;
+  if (!studentData)
+    return <Text style={styles.loading}>Loading...</Text>;
 
   const menu = [
     { title: "Monitoring", screen: "StudentMonitoring" },

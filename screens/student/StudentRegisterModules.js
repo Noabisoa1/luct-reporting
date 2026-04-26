@@ -9,66 +9,60 @@ import {
   View,
 } from "react-native";
 
-import {
-  arrayUnion,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+export default function StudentRegisterModules({ route }) {
+  const user = route?.params?.user;
 
-import { auth, db } from "../../config/firebase";
+  const studentId = user?.uid;
 
-export default function StudentRegisterModules() {
   const [courses, setCourses] = useState([]);
   const [modules, setModules] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [registered, setRegistered] = useState([]);
 
-  const uid = auth.currentUser.uid;
-
   useEffect(() => {
-    const loadCourses = async () => {
-      const snap = await getDocs(collection(db, "courses"));
-      setCourses(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }))
-      );
-    };
+    if (!studentId) {
+      Alert.alert("Error", "User not found. Please login again.");
+      return;
+    }
 
     loadCourses();
-  }, []);
-
-  useEffect(() => {
-    const loadStudent = async () => {
-      const userSnap = await getDoc(doc(db, "users", uid));
-      const user = userSnap.data();
-      setRegistered(user?.registeredModules ?? []);
-    };
-
     loadStudent();
   }, []);
 
+  const loadCourses = async () => {
+    try {
+      const res = await fetch("http://192.168.156.177:5000/api/courses");
+      const data = await res.json();
+      setCourses(data);
+    } catch (err) {
+      Alert.alert("Error", err.message);
+    }
+  };
+
+  const loadStudent = async () => {
+    try {
+      const res = await fetch(
+        `http://192.168.156.177:5000/api/users?role=student`
+      );
+
+      const users = await res.json();
+
+      const student = users.find((u) => u.id === studentId);
+
+      setRegistered(student?.registeredModules || []);
+    } catch (err) {
+      console.log(err.message);
+    }
+  };
+
   const loadModules = async (courseId) => {
     try {
-      const q = query(
-        collection(db, "modules"),
-        where("courseId", "==", courseId)
+      const res = await fetch(
+        `http://192.168.156.177:5000/api/courses/modules/course/${courseId}`
       );
 
-      const snap = await getDocs(q);
-
-      setModules(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }))
-      );
+      const data = await res.json();
+      setModules(data);
     } catch (err) {
       Alert.alert("Error", err.message);
     }
@@ -81,24 +75,36 @@ export default function StudentRegisterModules() {
 
   const registerModule = async (module) => {
     try {
-      const userRef = doc(db, "users", uid);
-      const moduleRef = doc(db, "modules", module.id);
+      const res = await fetch(
+        "http://192.168.156.177:5000/api/courses/register-modules",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            studentId,
+            courseId: module.courseId,
+            modules: [
+              {
+                moduleId: module.id,
+                moduleName: module.moduleName,
+              },
+            ],
+          }),
+        }
+      );
 
-      await updateDoc(userRef, {
-        registeredModules: arrayUnion({
-          moduleId: module.id,
-          moduleName: module.moduleName,
-          courseId: module.courseId,
-        }),
-      });
+      const data = await res.json();
 
-      await updateDoc(moduleRef, {
-        studentIds: arrayUnion(uid),
-      });
+      if (!res.ok) throw new Error(data.message);
 
       Alert.alert("Success", "Module registered!");
 
-      setRegistered((prev) => [...prev, { moduleId: module.id }]);
+      setRegistered((prev) => [
+        ...prev,
+        { moduleId: module.id },
+      ]);
     } catch (err) {
       Alert.alert("Error", err.message);
     }
@@ -116,9 +122,7 @@ export default function StudentRegisterModules() {
       <FlatList
         data={courses}
         horizontal
-        showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingVertical: 8 }}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -127,7 +131,9 @@ export default function StudentRegisterModules() {
             ]}
             onPress={() => selectCourse(item)}
           >
-            <Text style={styles.courseText}>{item.courseName}</Text>
+            <Text style={styles.courseText}>
+              {item.courseName}
+            </Text>
           </TouchableOpacity>
         )}
       />
@@ -142,7 +148,9 @@ export default function StudentRegisterModules() {
             scrollEnabled={false}
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={styles.name}>{item.moduleName}</Text>
+                <Text style={styles.name}>
+                  {item.moduleName}
+                </Text>
 
                 <Text style={styles.meta}>
                   Code: {item.moduleCode}
@@ -161,7 +169,9 @@ export default function StudentRegisterModules() {
                   ]}
                 >
                   <Text style={styles.btnText}>
-                    {isRegistered(item.id) ? "Registered" : "Register"}
+                    {isRegistered(item.id)
+                      ? "Registered"
+                      : "Register"}
                   </Text>
                 </TouchableOpacity>
               </View>

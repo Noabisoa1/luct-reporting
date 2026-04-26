@@ -1,5 +1,3 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -10,56 +8,61 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "../config/firebase";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+const handleLogin = async () => {
+  if (!email || !password) {
+    Alert.alert("Error", "Enter email and password");
+    return;
+  }
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Enter email and password");
-      return;
+  try {
+    setLoading(true);
+
+    const response = await fetch("http://192.168.156.177:5000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Login failed");
     }
 
-    try {
-      setLoading(true);
-
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-
-      const uid = userCredential.user.uid;
-
-      const userDoc = await getDoc(doc(db, "users", uid));
-
-      if (!userDoc.exists()) {
-        Alert.alert("Error", "User not found");
-        return;
-      }
-
-      const role = userDoc.data()?.role;
-
-      if (role === "student") {
-        navigation.replace("StudentDashboard");
-      } else if (role === "lecturer") {
-        navigation.replace("LecturerDashboard");
-      } else if (role === "prl") {
-        navigation.replace("PRLDashboard");
-      } else if (role === "pl") {
-        navigation.replace("PLDashboard");
-      } else {
-        Alert.alert("Error", "Invalid role");
-      }
-    } catch (error) {
-      Alert.alert("Login Error", error.message);
-    } finally {
-      setLoading(false);
+    if (!data.role) {
+      throw new Error("Role missing from server response");
     }
-  };
+
+    const user = data;
+
+    if (user.role === "student") {
+      navigation.replace("StudentDashboard", { user });
+    } else if (user.role === "lecturer") {
+      navigation.replace("LecturerDashboard", { user });
+    } else if (user.role === "prl") {
+      navigation.replace("PRLDashboard", { user });
+    } else if (user.role === "pl") {
+      navigation.replace("PLDashboard", { user });
+    } else {
+      Alert.alert("Error", "Invalid role");
+    }
+
+  } catch (error) {
+    Alert.alert("Login Error", error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>

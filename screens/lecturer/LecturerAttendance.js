@@ -9,142 +9,156 @@ import {
   View,
 } from "react-native";
 
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  where,
-} from "firebase/firestore";
+export default function LecturerAttendance({ route }) {
+  /* ================= SAFE USER ================= */
+  const user = route?.params?.user ?? null;
 
-import { auth, db } from "../../config/firebase";
-
-export default function LecturerAttendance() {
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
-
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
-
   const [loading, setLoading] = useState(true);
 
+  const BASE_URL = "http://192.168.156.177:5000";
+
+  /* ================= ALL HOOKS FIRST (RULE FIX) ================= */
   useEffect(() => {
+    if (!user) return;
+
     const fetchModules = async () => {
-      const uid = auth.currentUser.uid;
+      try {
+        setLoading(true);
 
-      const userSnap = await getDoc(doc(db, "users", uid));
-      const user = userSnap.data();
+        const lecturerId = user.uid;
 
-      const moduleIds = user.modules?.map(m => m.moduleId) || [];
+        const res = await fetch(
+          `${BASE_URL}/api/courses/modules/lecturer/${lecturerId}`
+        );
 
-      if (moduleIds.length === 0) {
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to load modules");
+        }
+
+        setModules(data);
+      } catch (error) {
+        console.log(error);
+        Alert.alert("Error", error.message);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const q = query(
-        collection(db, "modules"),
-        where("__name__", "in", moduleIds)
-      );
-
-      const snap = await getDocs(q);
-
-      setModules(snap.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-      })));
-
-      setLoading(false);
     };
 
     fetchModules();
-  }, []);
+  }, [user]);
 
-  const loadStudents = async (module) => {
-    setSelectedModule(module);
-
-    if (!module.studentIds || module.studentIds.length === 0) {
-      setStudents([]);
-      return;
-    }
-
-    const q = query(
-      collection(db, "users"),
-      where("__name__", "in", module.studentIds)
+  /* ================= GUARD AFTER HOOKS ================= */
+  if (!user) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#fff" }}>
+          User not found. Please login again.
+        </Text>
+      </View>
     );
+  }
 
-    const snap = await getDocs(q);
+  /* ================= LOADING ================= */
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#22c55e" />
+      </View>
+    );
+  }
 
-    const studentList = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(u => u.role === "student");
-
-    setStudents(studentList);
-
-    const initial = {};
-    studentList.forEach(s => {
-      initial[s.id] = "present";
-    });
-
-    setAttendance(initial);
-  };
-
-  const markAttendance = (studentId, status) => {
-    setAttendance(prev => ({
-      ...prev,
-      [studentId]: status,
-    }));
-  };
-
-  const submitAttendance = async () => {
-    if (!selectedModule) {
-      Alert.alert("Error", "Select module");
-      return;
-    }
-
+  /* ================= LOAD STUDENTS ================= */
+  const loadStudents = async (module) => {
     try {
-      const presentStudents = Object.entries(attendance)
-        .filter(([_, status]) => status === "present")
-        .map(([id]) => id);
+      setSelectedModule(module);
+      setStudents([]);
+      setAttendance({});
 
-      await addDoc(collection(db, "attendance"), {
-        moduleId: selectedModule.id,
-        moduleName: selectedModule.moduleName,
-        lecturerId: auth.currentUser.uid,
-        lecturerName: auth.currentUser.displayName,
-        totalStudents: students.length,
-        presentCount: presentStudents.length,
-        records: attendance,
-        createdAt: serverTimestamp(),
-      });
-
-      Alert.alert(
-        "Success",
-        `Attendance saved\nPresent: ${presentStudents.length}/${students.length}`
+      const res = await fetch(
+        `${BASE_URL}/api/courses/modules/${module.id}/students`
       );
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to load students");
+      }
+
+      setStudents(data);
+
+      const initial = {};
+      data.forEach((s) => {
+        initial[s.id] = "present";
+      });
+
+      setAttendance(initial);
     } catch (error) {
       Alert.alert("Error", error.message);
     }
   };
 
-  if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color="#22c55e" />
-    </View>
-  );
+  /* ================= MARK ATTENDANCE ================= */
+  const markAttendance = (studentId, status) => {
+    setAttendance((prev) => ({
+      ...prev,
+      [studentId]: status,
+    }));
+  };
 
+  /* ================= SUBMIT ================= */
+  const submitAttendance = async () => {
+    try {
+      if (!selectedModule) {
+        Alert.alert("Error", "No module selected");
+        return;
+      }
+
+      const res = await fetch(`${BASE_URL}/api/attendance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          moduleId: selectedModule.id,
+          moduleName: selectedModule.moduleName,
+          lecturerId: user.uid,
+          attendance,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to submit attendance");
+      }
+
+      Alert.alert("Success", "Attendance saved");
+
+      setSelectedModule(null);
+      setStudents([]);
+      setAttendance({});
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  /* ================= UI ================= */
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Attendance</Text>
-      <Text style={styles.subtitle}>Select Module</Text>
+      <Text style={styles.title}>Lecturer Attendance</Text>
+
+      <Text style={styles.subtitle}>Your Modules</Text>
 
       <FlatList
         data={modules}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No modules assigned</Text>
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[
@@ -154,7 +168,6 @@ export default function LecturerAttendance() {
             onPress={() => loadStudents(item)}
           >
             <Text style={styles.moduleName}>{item.moduleName}</Text>
-            <Text style={styles.moduleCode}>{item.moduleCode}</Text>
           </TouchableOpacity>
         )}
       />
@@ -168,6 +181,9 @@ export default function LecturerAttendance() {
           <FlatList
             data={students}
             keyExtractor={(item) => item.id}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No students found</Text>
+            }
             renderItem={({ item }) => {
               const status = attendance[item.id];
 
@@ -177,30 +193,33 @@ export default function LecturerAttendance() {
 
                   <TouchableOpacity
                     style={[
-                      styles.checkbox,
+                      styles.btn,
                       status === "present" && styles.present,
                     ]}
                     onPress={() => markAttendance(item.id, "present")}
                   >
-                    <Text style={styles.icon}>✔</Text>
+                    <Text style={styles.icon}>P</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={[
-                      styles.checkbox,
+                      styles.btn,
                       status === "absent" && styles.absent,
                     ]}
                     onPress={() => markAttendance(item.id, "absent")}
                   >
-                    <Text style={styles.icon}>✖</Text>
+                    <Text style={styles.icon}>A</Text>
                   </TouchableOpacity>
                 </View>
               );
             }}
           />
 
-          <TouchableOpacity style={styles.button} onPress={submitAttendance}>
-            <Text style={styles.btnText}>Submit Attendance</Text>
+          <TouchableOpacity
+            style={styles.submitBtn}
+            onPress={submitAttendance}
+          >
+            <Text style={styles.submitText}>Submit Attendance</Text>
           </TouchableOpacity>
         </>
       )}
@@ -208,6 +227,7 @@ export default function LecturerAttendance() {
   );
 }
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -230,7 +250,7 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    marginTop: 10,
+    marginTop: 15,
     fontWeight: "700",
     fontSize: 14,
     color: "#94a3b8",
@@ -241,8 +261,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e293b",
     marginBottom: 10,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#334155",
   },
 
   selected: {
@@ -250,14 +268,8 @@ const styles = StyleSheet.create({
   },
 
   moduleName: {
-    fontWeight: "800",
     color: "#e2e8f0",
-    fontSize: 15,
-  },
-
-  moduleCode: {
-    color: "#94a3b8",
-    marginTop: 2,
+    fontWeight: "700",
   },
 
   studentRow: {
@@ -267,24 +279,21 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#334155",
   },
 
   studentName: {
     flex: 1,
     color: "#e2e8f0",
-    fontWeight: "600",
   },
 
-  checkbox: {
+  btn: {
     width: 40,
     height: 40,
     marginLeft: 10,
-    alignItems: "center",
-    justifyContent: "center",
     borderRadius: 10,
     backgroundColor: "#334155",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   icon: {
@@ -300,16 +309,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#dc2626",
   },
 
-  button: {
+  submitBtn: {
+    marginTop: 15,
     backgroundColor: "#22c55e",
     padding: 15,
-    marginTop: 15,
     borderRadius: 14,
   },
 
-  btnText: {
+  submitText: {
     color: "#fff",
     textAlign: "center",
     fontWeight: "800",
+  },
+
+  emptyText: {
+    color: "#94a3b8",
+    marginTop: 10,
   },
 });

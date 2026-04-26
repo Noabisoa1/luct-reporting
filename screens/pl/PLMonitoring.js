@@ -1,13 +1,15 @@
-import {
-  collection,
-  getDocs,
-} from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
-import { db } from "../../config/firebase";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function PLMonitoring() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [stats, setStats] = useState({
     courses: 0,
@@ -24,47 +26,44 @@ export default function PLMonitoring() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const coursesSnap = await getDocs(collection(db, "courses"));
-        const courseList = coursesSnap.docs.map(d => ({
-          id: d.id,
-          ...d.data(),
-        }));
+        setError(null);
 
-        const modulesSnap = await getDocs(collection(db, "modules"));
-        const moduleList = modulesSnap.docs.map(d => ({
-          id: d.id,
-          ...d.data(),
-        }));
+       const [coursesRes, modulesRes, lecturersRes, reportsRes] =
+       await Promise.all([
+  fetch("http://192.168.156.177:5000/api/courses"),
+  fetch("http://192.168.156.177:5000/api/courses/modules"), // ✅ works now
+  fetch("http://192.168.156.177:5000/api/users?role=lecturer"),
+  fetch("http://192.168.156.177:5000/api/reports"),
+]);
 
-        const lecturersSnap = await getDocs(collection(db, "users"));
+        if (!coursesRes.ok || !modulesRes.ok || !lecturersRes.ok || !reportsRes.ok) {
+          throw new Error("Failed to fetch one or more resources");
+        }
 
-        const lecturerList = lecturersSnap.docs
-          .map(d => ({
-            id: d.id,
-            ...d.data(),
-          }))
-          .filter(u => u.role === "lecturer");
+        const coursesData = await coursesRes.json();
+        const modulesData = await modulesRes.json();
+        const lecturersData = await lecturersRes.json();
+        const reportsData = await reportsRes.json();
 
-        const reportsSnap = await getDocs(collection(db, "reports"));
-        const reportList = reportsSnap.docs.map(d => ({
-          id: d.id,
-          ...d.data(),
-        }));
+        const safeCourses = Array.isArray(coursesData) ? coursesData : [];
+        const safeModules = Array.isArray(modulesData) ? modulesData : [];
+        const safeLecturers = Array.isArray(lecturersData) ? lecturersData : [];
+        const safeReports = Array.isArray(reportsData) ? reportsData : [];
+
+        setCourses(safeCourses);
+        setModules(safeModules);
+        setLecturers(safeLecturers);
+        setReports(safeReports);
 
         setStats({
-          courses: courseList.length,
-          modules: moduleList.length,
-          lecturers: lecturerList.length,
-          reports: reportList.length,
+          courses: safeCourses.length,
+          modules: safeModules.length,
+          lecturers: safeLecturers.length,
+          reports: safeReports.length,
         });
 
-        setCourses(courseList);
-        setModules(moduleList);
-        setLecturers(lecturerList);
-        setReports(reportList);
-
-      } catch (error) {
-        console.log(error);
+      } catch (err) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -77,6 +76,16 @@ export default function PLMonitoring() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator size="large" color="#facc15" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loading}>
+        <Text style={{ color: "red", fontWeight: "700" }}>
+          {error}
+        </Text>
       </View>
     );
   }
@@ -108,15 +117,15 @@ export default function PLMonitoring() {
         </View>
       </View>
 
-      <Text style={styles.subtitle}>Classes</Text>
+      <Text style={styles.subtitle}>Courses</Text>
 
-      {courses.map(c => {
+      {courses.map((c) => {
         const classLabel = c.classYear
           ? `${c.courseName}${c.classYear}`
           : c.courseName;
 
         return (
-          <View key={c.id} style={styles.listCard}>
+          <View key={c.id || Math.random()} style={styles.listCard}>
             <Text style={styles.bold}>{classLabel}</Text>
           </View>
         );
@@ -124,40 +133,50 @@ export default function PLMonitoring() {
 
       <Text style={styles.subtitle}>Modules</Text>
 
-      {modules.map(m => {
+      {modules.map((m) => {
         const classLabel = m.courseName && m.classYear
           ? `${m.courseName}${m.classYear}`
           : m.courseName;
 
         return (
-          <View key={m.id} style={styles.listCard}>
-            <Text style={styles.bold}>{m.moduleName}</Text>
-            <Text style={styles.meta}>Code: {m.moduleCode}</Text>
-            <Text style={styles.meta}>Class: {classLabel || "Not assigned"}</Text>
-            <Text style={styles.meta}>Lecturer: {m.lecturerName || "Not assigned"}</Text>
+          <View key={m.id || Math.random()} style={styles.listCard}>
+            <Text style={styles.bold}>{m.moduleName || "No name"}</Text>
+            <Text style={styles.meta}>
+              Code: {m.moduleCode || "N/A"}
+            </Text>
+            <Text style={styles.meta}>
+              Class: {classLabel || "Not assigned"}
+            </Text>
+            <Text style={styles.meta}>
+              Lecturer: {m.lecturerName || "Not assigned"}
+            </Text>
           </View>
         );
       })}
 
       <Text style={styles.subtitle}>Lecturers</Text>
 
-      {lecturers.map(l => (
-        <View key={l.id} style={styles.listCard}>
-          <Text style={styles.bold}>{l.name}</Text>
-          <Text style={styles.meta}>Faculty: {l.faculty}</Text>
-          <Text style={styles.meta}>Stream: {l.stream}</Text>
+      {lecturers.map((l) => (
+        <View key={l.id || Math.random()} style={styles.listCard}>
+          <Text style={styles.bold}>{l.name || "Unknown"}</Text>
+          <Text style={styles.meta}>Faculty: {l.faculty || "N/A"}</Text>
+          <Text style={styles.meta}>Role: {l.role || "N/A"}</Text>
         </View>
       ))}
 
       <Text style={styles.subtitle}>Reports</Text>
 
-      {reports.map(r => (
-        <View key={r.id} style={styles.listCard}>
-          <Text style={styles.bold}>{r.lecturerName}</Text>
-          <Text style={styles.meta}>{r.courseName} - {r.moduleName}</Text>
-          <Text style={styles.meta}>Week: {r.week}</Text>
+      {reports.map((r) => (
+        <View key={r.id || Math.random()} style={styles.listCard}>
+          <Text style={styles.bold}>{r.lecturerName || "Unknown"}</Text>
           <Text style={styles.meta}>
-            Attendance: {r.attendancePresent}/{r.totalStudents}
+            {r.courseName || "Course"} - {r.moduleName || "Module"}
+          </Text>
+          <Text style={styles.meta}>
+            Week: {r.week || "N/A"}
+          </Text>
+          <Text style={styles.meta}>
+            Attendance: {r.attendancePresent || 0}/{r.totalStudents || 0}
           </Text>
         </View>
       ))}
@@ -199,10 +218,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 12,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
 

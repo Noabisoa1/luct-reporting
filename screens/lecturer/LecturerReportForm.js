@@ -1,7 +1,8 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useEffect, useState } from "react";
 import {
   Alert,
-  FlatList,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,21 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import DateTimePicker from "@react-native-community/datetimepicker";
-
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  serverTimestamp,
-  where,
-} from "firebase/firestore";
-
-import { auth, db } from "../../config/firebase";
 
 export default function LecturerReportForm() {
   const [modules, setModules] = useState([]);
@@ -46,82 +32,77 @@ export default function LecturerReportForm() {
 
   const [userData, setUserData] = useState(null);
 
+  // ✅ LOAD MODULES (backend controller)
   useEffect(() => {
-    const fetchData = async () => {
-      const uid = auth.currentUser.uid;
+    const fetchModules = async () => {
+      try {
+        const stored = await AsyncStorage.getItem("user");
+        const user = JSON.parse(stored);
 
-      const userSnap = await getDoc(doc(db, "users", uid));
-      const user = userSnap.data();
-      setUserData(user);
+        if (!user?.uid) return;
 
-      const moduleObjects = user.modules || [];
-      const moduleIds = moduleObjects.map((m) => m.moduleId);
+        setUserData(user);
 
-      if (moduleIds.length === 0) return;
+        const res = await fetch(
+          `http://192.168.156.177:5000/api/courses/modules/lecturer/${user.uid}`
+        );
 
-      const q = query(
-        collection(db, "modules"),
-        where("__name__", "in", moduleIds)
-      );
+        const data = await res.json();
 
-      const snap = await getDocs(q);
+        if (!res.ok) throw new Error(data.message);
 
-      setModules(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }))
-      );
+        setModules(data || []);
+      } catch (err) {
+        console.log("MODULE ERROR:", err.message);
+      }
     };
 
-    fetchData();
+    fetchModules();
   }, []);
 
-  const loadStudents = async (module) => {
-    if (!module?.studentIds?.length) {
-      setStudents([]);
-      return;
+  // ✅ LOAD STUDENTS (backend controller)
+  const loadStudents = async (moduleId) => {
+    try {
+      const res = await fetch(
+        `http://192.168.156.177:5000/api/courses/module-students/${moduleId}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      setStudents(data || []);
+    } catch (err) {
+      Alert.alert("Error", err.message);
     }
-
-    const q = query(
-      collection(db, "users"),
-      where("__name__", "in", module.studentIds)
-    );
-
-    const snap = await getDocs(q);
-
-    setStudents(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   };
 
+  // ✅ LOAD ATTENDANCE (backend controller)
   const fetchAttendance = async (moduleId) => {
-    const q = query(
-      collection(db, "attendance"),
-      where("moduleId", "==", moduleId)
-    );
+    try {
+      const res = await fetch(
+        `http://192.168.156.177:5000/api/courses/attendance/${moduleId}`
+      );
 
-    const snap = await getDocs(q);
+      const data = await res.json();
 
-    if (!snap.empty) {
-      const latest = snap.docs
-        .map((d) => d.data())
-        .sort(
-          (a, b) =>
-            (b.createdAt?.seconds || 0) -
-            (a.createdAt?.seconds || 0)
-        )[0];
+      if (!res.ok) throw new Error(data.message);
 
-      setPresentCount(latest.presentCount || 0);
-    } else {
+      setPresentCount(data?.presentCount || 0);
+    } catch (err) {
       setPresentCount(0);
     }
   };
 
-  const handleSelectModule = (m) => {
-    setSelectedModule(m);
-    loadStudents(m);
-    fetchAttendance(m.id);
+  // ✅ SELECT MODULE (backend-driven)
+  const handleSelectModule = async (module) => {
+    setSelectedModule(module);
+
+    await loadStudents(module.id);
+    await fetchAttendance(module.id);
   };
 
+  // ✅ SUBMIT REPORT (matches createReport controller)
   const submitReport = async () => {
     if (!selectedModule || !week || !topic) {
       Alert.alert("Error", "Fill required fields");
@@ -129,10 +110,10 @@ export default function LecturerReportForm() {
     }
 
     try {
-      await addDoc(collection(db, "reports"), {
-        lecturerId: auth.currentUser.uid,
-        lecturerName: userData?.name,
-        faculty: userData?.faculty,
+      const payload = {
+        lecturerId: userData.uid,
+        lecturerName: userData.name,
+        faculty: userData.faculty,
 
         courseId: selectedModule.courseId,
         courseName: selectedModule.courseName,
@@ -151,15 +132,24 @@ export default function LecturerReportForm() {
         recommendations,
 
         attendancePresent: presentCount,
-        totalStudents:
-          selectedModule.studentIds?.length || students.length || 0,
+        totalStudents: students.length,
+      };
 
-        prlFeedback: "",
-        createdAt: serverTimestamp(),
+      const res = await fetch("http://192.168.156.177:5000/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
 
       Alert.alert("Success", "Report submitted");
 
+      // reset
       setWeek("");
       setVenue("");
       setTopic("");
@@ -168,36 +158,43 @@ export default function LecturerReportForm() {
       setSelectedModule(null);
       setStudents([]);
       setPresentCount(0);
-    } catch (error) {
-      Alert.alert("Error", error.message);
+    } catch (err) {
+      Alert.alert("Error", err.message);
     }
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container}>
+
       <Text style={styles.title}>Lecture Report Form</Text>
+
       <Text style={styles.subtitle}>Select Module</Text>
 
-      <FlatList
-        data={modules}
-        scrollEnabled={false}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ gap: 10 }}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.card,
-              selectedModule?.id === item.id && styles.cardSelected,
-            ]}
-            onPress={() => handleSelectModule(item)}
-          >
-            <Text style={styles.moduleName}>{item.moduleName}</Text>
-            <Text style={styles.moduleCode}>{item.moduleCode}</Text>
-            <Text style={styles.courseName}>{item.courseName}</Text>
-          </TouchableOpacity>
-        )}
-      />
+      {/* ✅ FIXED: NO FlatList (prevents render bug) */}
+      {modules.map((item) => (
+        <TouchableOpacity
+          key={item.id}
+          style={[
+            styles.card,
+            selectedModule?.id === item.id && styles.cardSelected,
+          ]}
+          onPress={() => handleSelectModule(item)}
+        >
+          <Text style={styles.moduleName}>
+            {item.moduleName || "No Name"}
+          </Text>
 
+          <Text style={styles.moduleCode}>
+            {item.moduleCode || "No Code"}
+          </Text>
+
+          <Text style={styles.courseName}>
+            {item.courseName || "No Course"}
+          </Text>
+        </TouchableOpacity>
+      ))}
+
+      {/* INFO */}
       {selectedModule && (
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
@@ -209,7 +206,8 @@ export default function LecturerReportForm() {
         </View>
       )}
 
-      <TouchableOpacity style={styles.selector} onPress={() => setShowDate(true)}>
+      {/* DATE */}
+      <TouchableOpacity onPress={() => setShowDate(true)} style={styles.selector}>
         <Text style={styles.selectorText}>
           Date: {date.toDateString()}
         </Text>
@@ -226,7 +224,8 @@ export default function LecturerReportForm() {
         />
       )}
 
-      <TouchableOpacity style={styles.selector} onPress={() => setShowTime(true)}>
+      {/* TIME */}
+      <TouchableOpacity onPress={() => setShowTime(true)} style={styles.selector}>
         <Text style={styles.selectorText}>
           Time: {time.toTimeString().slice(0, 5)}
         </Text>
@@ -243,51 +242,32 @@ export default function LecturerReportForm() {
         />
       )}
 
-      <TextInput
-        placeholder="Week"
-        placeholderTextColor="#94a3b8"
-        style={styles.input}
-        value={week}
-        onChangeText={setWeek}
-      />
+      {/* INPUTS */}
+      <TextInput style={styles.input} placeholder="Week" value={week} onChangeText={setWeek} />
+      <TextInput style={styles.input} placeholder="Venue" value={venue} onChangeText={setVenue} />
+      <TextInput style={styles.input} placeholder="Topic" value={topic} onChangeText={setTopic} />
 
       <TextInput
-        placeholder="Venue"
-        placeholderTextColor="#94a3b8"
-        style={styles.input}
-        value={venue}
-        onChangeText={setVenue}
-      />
-
-      <TextInput
-        placeholder="Topic"
-        placeholderTextColor="#94a3b8"
-        style={styles.input}
-        value={topic}
-        onChangeText={setTopic}
-      />
-
-      <TextInput
-        placeholder="Learning Outcomes"
-        placeholderTextColor="#94a3b8"
         style={[styles.input, styles.textArea]}
-        multiline
+        placeholder="Learning Outcomes"
         value={outcomes}
         onChangeText={setOutcomes}
+        multiline
       />
 
       <TextInput
-        placeholder="Recommendations"
-        placeholderTextColor="#94a3b8"
         style={[styles.input, styles.textArea]}
-        multiline
+        placeholder="Recommendations"
         value={recommendations}
         onChangeText={setRecommendations}
+        multiline
       />
 
+      {/* SUBMIT */}
       <TouchableOpacity style={styles.button} onPress={submitReport}>
         <Text style={styles.buttonText}>Submit Report</Text>
       </TouchableOpacity>
+
     </ScrollView>
   );
 }

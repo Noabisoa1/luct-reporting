@@ -7,35 +7,29 @@ import {
   View,
 } from "react-native";
 
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../config/firebase";
-
 export default function PLClasses() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const snap = await getDocs(collection(db, "courses"));
+        setError(null);
 
-        const list = snap.docs.map((doc) => {
-          const data = doc.data();
+        const res = await fetch("http://192.168.156.177:5000/api/courses");
 
-          const courseCode =
-            data.courseCode ||
-            `${data.courseName || ""}${data.classYear || ""}`;
+        if (!res.ok) {
+          throw new Error("Failed to fetch courses");
+        }
 
-          return {
-            id: doc.id,
-            ...data,
-            courseCode,
-          };
-        });
+        const data = await res.json();
+
+        const list = Array.isArray(data) ? data : [];
 
         setCourses(list);
       } catch (err) {
-        console.log(err.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -44,12 +38,23 @@ export default function PLClasses() {
     fetchCourses();
   }, []);
 
-  if (loading)
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#facc15" />
       </View>
     );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={{ color: "red", fontWeight: "700" }}>
+          {error}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -59,23 +64,29 @@ export default function PLClasses() {
         data={courses}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.code}>{item.courseCode}</Text>
+        renderItem={({ item }) => {
+          const courseCode =
+            item.courseCode ||
+            `${item.courseName || ""}${item.classYear || ""}`;
 
-            <Text style={styles.text}>
-              <Text style={styles.label}>Course:</Text> {item.courseName}
-            </Text>
+          return (
+            <View style={styles.card}>
+              <Text style={styles.code}>{courseCode}</Text>
 
-            <Text style={styles.text}>
-              <Text style={styles.label}>Class:</Text> {item.classYear}
-            </Text>
+              <Text style={styles.text}>
+                <Text style={styles.label}>Course:</Text> {item.courseName || "N/A"}
+              </Text>
 
-            <Text style={styles.text}>
-              <Text style={styles.label}>Faculty:</Text> {item.faculty}
-            </Text>
-          </View>
-        )}
+              <Text style={styles.text}>
+                <Text style={styles.label}>Class:</Text> {item.classYear || "N/A"}
+              </Text>
+
+              <Text style={styles.text}>
+                <Text style={styles.label}>Faculty:</Text> {item.faculty || "N/A"}
+              </Text>
+            </View>
+          );
+        }}
       />
     </View>
   );
@@ -107,10 +118,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     marginBottom: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
 

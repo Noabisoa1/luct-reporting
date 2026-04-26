@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -7,18 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import {
-  arrayUnion,
-  collection,
-  doc,
-  getDocs,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-
-import { db } from "../../config/firebase";
 
 export default function PLAssignLecturers() {
   const [courses, setCourses] = useState([]);
@@ -29,19 +18,66 @@ export default function PLAssignLecturers() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedLecturer, setSelectedLecturer] = useState(null);
 
+  const [loading, setLoading] = useState(false);
+
+  const BASE_URL = "http://192.168.156.177:5000";
+
+  /* ================= FETCH COURSES ================= */
   const fetchCourses = async () => {
-    const snap = await getDocs(collection(db, "courses"));
-    setCourses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    try {
+      const res = await fetch(`${BASE_URL}/api/courses`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to load courses");
+
+      setCourses(Array.isArray(data) ? data : []);
+    } catch (err) {
+      Alert.alert("Error", err.message);
+    }
   };
 
+  /* ================= FETCH LECTURERS ================= */
   const fetchLecturers = async () => {
-    const q = query(
-      collection(db, "users"),
-      where("role", "==", "lecturer")
-    );
+    try {
+      const res = await fetch(
+        `${BASE_URL}/api/users?role=lecturer`
+      );
 
-    const snap = await getDocs(q);
-    setLecturers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to load lecturers");
+
+      setLecturers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      Alert.alert("Error", err.message);
+    }
+  };
+
+  /* ================= LOAD MODULES ================= */
+  const loadModules = async (courseId) => {
+    try {
+      setLoading(true);
+      setModules([]);
+
+      const res = await fetch(
+        `${BASE_URL}/api/courses/modules/course/${courseId}`
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to load modules");
+
+      const safeModules = Array.isArray(data) ? data : [];
+
+      console.log("COURSE MODULES:", safeModules);
+
+      setModules(safeModules);
+      setSelectedModule(null);
+    } catch (err) {
+      Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -49,138 +85,170 @@ export default function PLAssignLecturers() {
     fetchLecturers();
   }, []);
 
-  const loadModules = async (courseId) => {
-    const q = query(
-      collection(db, "modules"),
-      where("courseId", "==", courseId)
-    );
-
-    const snap = await getDocs(q);
-    setModules(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-  };
-
+  /* ================= ASSIGN ================= */
   const handleAssign = async () => {
-    if (!selectedModule || !selectedLecturer) {
-      Alert.alert("Error", "Select module and lecturer");
-      return;
-    }
-
     try {
-      await updateDoc(doc(db, "modules", selectedModule.id), {
-        lecturerId: selectedLecturer.id,
-        lecturerName: selectedLecturer.name,
-        lecturerFaculty: selectedLecturer.faculty,
-      });
+      if (!selectedModule || !selectedLecturer) {
+        Alert.alert("Error", "Select module and lecturer");
+        return;
+      }
 
-      await updateDoc(doc(db, "users", selectedLecturer.id), {
-        modules: arrayUnion({
-          moduleId: selectedModule.id,
-          moduleName: selectedModule.moduleName,
-          courseId: selectedModule.courseId,
-        }),
-      });
+      if (selectedModule.lecturerId) {
+        Alert.alert(
+          "Already Assigned",
+          `Assigned to ${selectedModule.lecturerName}`
+        );
+        return;
+      }
 
-      Alert.alert("Success", "Lecturer assigned");
+      const res = await fetch(
+        `${BASE_URL}/api/courses/modules/assign-lecturer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            moduleId: selectedModule.id,
+            lecturerId: selectedLecturer.id,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Assignment failed");
+
+      Alert.alert("Success", "Lecturer assigned successfully");
 
       setSelectedModule(null);
       setSelectedLecturer(null);
 
-      if (selectedCourse?.id) {
+      if (selectedCourse) {
         loadModules(selectedCourse.id);
       }
-
     } catch (error) {
       Alert.alert("Error", error.message);
     }
   };
 
+  /* ================= LOADING ================= */
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#22c55e" />
+      </View>
+    );
+  }
+
+  /* ================= UI ================= */
   return (
     <ScrollView contentContainerStyle={styles.container}>
-
       <Text style={styles.title}>Assign Lecturers</Text>
 
-      <Text style={styles.subtitle}>Select Course</Text>
-
+      {/* COURSES */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.row}>
-          {courses.map((item) => {
-            const classLabel = item.classYear
-              ? `${item.courseName}${item.classYear}`
-              : item.courseName;
-
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.card,
-                  selectedCourse?.id === item.id && styles.selected,
-                ]}
-                onPress={() => {
-                  setSelectedCourse(item);
-                  loadModules(item.id);
-                }}
-              >
-                <Text style={styles.cardTitle}>{classLabel}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      {selectedCourse && (
-        <>
-          <Text style={styles.subtitle}>Modules</Text>
-
-          {modules.map((item) => (
+          {courses.map((c) => (
             <TouchableOpacity
-              key={item.id}
+              key={c.id}
               style={[
                 styles.card,
-                selectedModule?.id === item.id && styles.selected,
+                selectedCourse?.id === c.id && styles.selected,
               ]}
-              onPress={() => setSelectedModule(item)}
+              onPress={() => {
+                setSelectedCourse(c);
+                loadModules(c.id);
+              }}
             >
-              <Text style={styles.cardTitle}>{item.moduleName}</Text>
-              <Text style={styles.meta}>Code: {item.moduleCode}</Text>
-              <Text style={styles.meta}>
-                Lecturer: {item.lecturerName || "Not assigned"}
+              <Text style={styles.cardTitle}>
+                {c.courseName} {c.classYear}
               </Text>
             </TouchableOpacity>
           ))}
-        </>
+        </View>
+      </ScrollView>
+
+      {/* MODULES */}
+      <Text style={styles.subtitle}>Modules</Text>
+
+      {modules.length === 0 && (
+        <Text style={{ color: "#94a3b8", marginBottom: 10 }}>
+          No modules found for this course
+        </Text>
       )}
 
+      {modules.map((m) => {
+        const isAssigned = !!m.lecturerId;
+
+        return (
+          <TouchableOpacity
+            key={m.id}
+            style={[
+              styles.card,
+              selectedModule?.id === m.id && styles.selected,
+              isAssigned && styles.assignedCard,
+            ]}
+            onPress={() => {
+              if (isAssigned) {
+                Alert.alert(
+                  "Assigned",
+                  `Already assigned to ${m.lecturerName}`
+                );
+                return;
+              }
+              setSelectedModule(m);
+            }}
+          >
+            <Text style={styles.cardTitle}>{m.moduleName}</Text>
+            <Text style={styles.meta}>{m.moduleCode}</Text>
+
+            <Text style={styles.statusText}>
+              {isAssigned
+                ? `Assigned to: ${m.lecturerName}`
+                : "Status: Not Assigned"}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+
+      {/* LECTURERS */}
       <Text style={styles.subtitle}>Lecturers</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.row}>
-          {lecturers.map((item) => (
+          {lecturers.map((l) => (
             <TouchableOpacity
-              key={item.id}
+              key={l.id}
               style={[
                 styles.card,
-                selectedLecturer?.id === item.id && styles.selected,
+                selectedLecturer?.id === l.id && styles.selected,
               ]}
-              onPress={() => setSelectedLecturer(item)}
+              onPress={() => setSelectedLecturer(l)}
             >
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              <Text style={styles.meta}>{item.faculty}</Text>
+              <Text style={styles.cardTitle}>{l.name}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
+      {/* BUTTON */}
       <TouchableOpacity style={styles.button} onPress={handleAssign}>
         <Text style={styles.btnText}>Assign Lecturer</Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 }
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+    backgroundColor: "#0f172a",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: "#0f172a",
   },
 
@@ -210,16 +278,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 16,
     minWidth: 140,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
   },
 
   selected: {
     borderWidth: 2,
     borderColor: "#22c55e",
+  },
+
+  assignedCard: {
+    backgroundColor: "#374151",
+    opacity: 0.9,
   },
 
   cardTitle: {
@@ -232,6 +300,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#94a3b8",
     marginTop: 4,
+  },
+
+  statusText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#94a3b8",
   },
 
   button: {

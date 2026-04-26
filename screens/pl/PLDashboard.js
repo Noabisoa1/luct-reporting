@@ -28,7 +28,6 @@ export default function PLDashboard({ navigation }) {
           <TouchableOpacity
             key={index}
             style={styles.card}
-            activeOpacity={0.85}
             onPress={() => navigation.navigate(item.screen)}
           >
             <Text style={styles.cardTitle}>{item.title}</Text>
@@ -81,10 +80,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
 

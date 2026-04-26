@@ -9,20 +9,10 @@ import {
   View,
 } from "react-native";
 
-import {
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
-
-import { db } from "../../config/firebase";
-
 export default function PLCreateCourse() {
-
   const [courseName, setCourseName] = useState("");
   const [faculty, setFaculty] = useState("");
   const [classYear, setClassYear] = useState("");
-
   const [modules, setModules] = useState([
     { moduleName: "", moduleCode: "" },
   ]);
@@ -53,35 +43,21 @@ export default function PLCreateCourse() {
     }
 
     try {
-      const courseCode = `${courseName}${classYear}`;
-
-      const courseRef = await addDoc(collection(db, "courses"), {
-        courseName,
-        classYear,
-        courseCode,
-        faculty,
-        studentIds: [],
-        createdAt: serverTimestamp(),
+      const response = await fetch("http://192.168.156.177:5000/api/courses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          courseName,
+          faculty,
+          classYear,
+          modules: validModules,
+        }),
       });
 
-      for (let mod of validModules) {
-        await addDoc(collection(db, "modules"), {
-          courseId: courseRef.id,
-          courseName,
-          courseCode,
-          classYear,
-          faculty,
-
-          moduleName: mod.moduleName,
-          moduleCode: mod.moduleCode,
-
-          lecturerId: null,
-          lecturerName: null,
-
-          studentIds: [],
-          createdAt: serverTimestamp(),
-        });
-      }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
 
       Alert.alert("Success", "Course created successfully");
 
@@ -89,7 +65,6 @@ export default function PLCreateCourse() {
       setFaculty("");
       setClassYear("");
       setModules([{ moduleName: "", moduleCode: "" }]);
-
     } catch (error) {
       Alert.alert("Error", error.message);
     }
@@ -100,7 +75,7 @@ export default function PLCreateCourse() {
       <Text style={styles.title}>Create Course</Text>
 
       <TextInput
-        placeholder="Faculty (e.g FICT)"
+        placeholder="Faculty"
         placeholderTextColor="#94a3b8"
         style={styles.input}
         value={faculty}
@@ -108,7 +83,7 @@ export default function PLCreateCourse() {
       />
 
       <TextInput
-        placeholder="Course Name (e.g BSCSM)"
+        placeholder="Course Name"
         placeholderTextColor="#94a3b8"
         style={styles.input}
         value={courseName}
@@ -116,26 +91,17 @@ export default function PLCreateCourse() {
       />
 
       <TextInput
-        placeholder="Class (e.g Y1, Y2, Y3)"
+        placeholder="Class (Y1, Y2...)"
         placeholderTextColor="#94a3b8"
         style={styles.input}
         value={classYear}
         onChangeText={setClassYear}
       />
 
-      {courseName && classYear && (
-        <View style={styles.preview}>
-          <Text style={styles.previewLabel}>Preview</Text>
-          <Text style={styles.previewText}>{courseName + classYear}</Text>
-        </View>
-      )}
-
       <Text style={styles.subtitle}>Modules</Text>
 
       {modules.map((mod, index) => (
         <View key={index} style={styles.moduleBox}>
-          <Text style={styles.moduleTitle}>Module {index + 1}</Text>
-
           <TextInput
             placeholder="Module Name"
             placeholderTextColor="#94a3b8"
