@@ -11,12 +11,14 @@ const {
   registerStudentModules,
   rateModule,
   getModuleStudents,
+  getModuleById,
 } = require("../controllers/courseController");
 
 router.post("/", createCourse);
 router.get("/", getCourses);
 router.get("/modules", getAllModules);
 router.get("/modules/course/:courseId", getModulesByCourse);
+router.get("/modules/:moduleId", getModuleById);  // Add this line
 router.get("/modules/lecturer/:lecturerId", getLecturerModules);
 router.post("/modules/assign-lecturer", assignLecturerToModule);
 router.post("/modules/:moduleId/rate", rateModule);

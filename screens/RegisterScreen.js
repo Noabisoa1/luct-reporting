@@ -14,60 +14,73 @@ export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // 🔥 NEW
-
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState("student");
   const [faculty, setFaculty] = useState("");
   const [semester, setSemester] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const ROLES = ["student", "lecturer", "prl", "pl"];
 
- const handleRegister = async () => {
-  if (!name || !email || !password || !confirmPassword) {
-    Alert.alert("Error", "All fields required");
-    return;
-  }
-
-  if (password !== confirmPassword) {
-    Alert.alert("Error", "Passwords do not match");
-    return;
-  }
-
-  try {
-    setLoading(true);
-
-    const response = await fetch("http://192.168.156.177:5000/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        role,
-        faculty,
-        semester,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message);
+  const handleRegister = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "All fields required");
+      return;
     }
 
-    Alert.alert("Success", "Account created!");
-    navigation.replace("Login");
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
 
-  } catch (error) {
-    Alert.alert("Error", error.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    if (role === "student") {
+      if (!faculty) {
+        Alert.alert("Error", "Faculty is required for students");
+        return;
+      }
+      if (!semester || parseInt(semester) < 1 || parseInt(semester) > 8) {
+        Alert.alert("Error", "Semester must be between 1 and 8");
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch("http://10.11.13.251:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          role,
+          faculty: role === "student" ? faculty : "",
+          semester: role === "student" ? semester : "",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      Alert.alert("Success", "Account created successfully!");
+      navigation.replace("Login");
+
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -78,6 +91,7 @@ export default function RegisterScreen({ navigation }) {
         style={styles.input}
         value={name}
         onChangeText={setName}
+        placeholderTextColor="#94a3b8"
       />
 
       <TextInput
@@ -85,6 +99,9 @@ export default function RegisterScreen({ navigation }) {
         style={styles.input}
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        placeholderTextColor="#94a3b8"
       />
 
       <TextInput
@@ -93,6 +110,7 @@ export default function RegisterScreen({ navigation }) {
         style={styles.input}
         value={password}
         onChangeText={setPassword}
+        placeholderTextColor="#94a3b8"
       />
 
       <TextInput
@@ -101,20 +119,7 @@ export default function RegisterScreen({ navigation }) {
         style={styles.input}
         value={confirmPassword}
         onChangeText={setConfirmPassword}
-      />
-
-      <TextInput
-        placeholder="Faculty"
-        style={styles.input}
-        value={faculty}
-        onChangeText={setFaculty}
-      />
-
-      <TextInput
-        placeholder="Semester"
-        style={styles.input}
-        value={semester}
-        onChangeText={setSemester}
+        placeholderTextColor="#94a3b8"
       />
 
       <Text style={styles.label}>Role</Text>
@@ -138,7 +143,28 @@ export default function RegisterScreen({ navigation }) {
         ))}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+      {role === "student" && (
+        <>
+          <TextInput
+            placeholder="Faculty (e.g., Computing, Engineering)"
+            style={styles.input}
+            value={faculty}
+            onChangeText={setFaculty}
+            placeholderTextColor="#94a3b8"
+          />
+
+          <TextInput
+            placeholder="Semester (1-8)"
+            style={styles.input}
+            value={semester}
+            onChangeText={setSemester}
+            keyboardType="numeric"
+            placeholderTextColor="#94a3b8"
+          />
+        </>
+      )}
+
+      <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -159,7 +185,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: "#0f172a",
   },
-
   title: {
     fontSize: 26,
     fontWeight: "800",
@@ -167,7 +192,6 @@ const styles = StyleSheet.create({
     color: "#facc15",
     textAlign: "center",
   },
-
   input: {
     backgroundColor: "#1e293b",
     padding: 14,
@@ -177,19 +201,16 @@ const styles = StyleSheet.create({
     borderColor: "#334155",
     color: "#e2e8f0",
   },
-
   label: {
     fontWeight: "700",
     marginTop: 10,
     color: "#e2e8f0",
   },
-
   roleContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginTop: 10,
   },
-
   roleBtn: {
     padding: 10,
     borderWidth: 1,
@@ -199,35 +220,29 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#1e293b",
   },
-
   roleSelected: {
     backgroundColor: "#22c55e",
     borderColor: "#22c55e",
   },
-
   roleText: {
     color: "#e2e8f0",
     fontWeight: "600",
   },
-
   roleTextSelected: {
     color: "#fff",
     fontWeight: "700",
   },
-
   button: {
     backgroundColor: "#22c55e",
     padding: 15,
     borderRadius: 12,
     marginTop: 20,
   },
-
   btn: {
     color: "#fff",
     textAlign: "center",
     fontWeight: "800",
   },
-
   link: {
     marginTop: 15,
     textAlign: "center",

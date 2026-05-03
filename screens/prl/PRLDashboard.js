@@ -4,8 +4,6 @@ import Logout from "../Logout";
 export default function PRLDashboard({ navigation }) {
   const items = [
     { title: "Courses", screen: "PRLCourses" },
-    { title: "Reports", screen: "PRLReports" },
-    { title: "Monitoring", screen: "PRLMonitoring" },
     { title: "Ratings", screen: "PRLRating" },
     { title: "Classes", screen: "PRLClasses" },
   ];

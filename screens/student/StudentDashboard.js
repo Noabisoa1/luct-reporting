@@ -1,50 +1,116 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth } from "../../config/firebase";
-import Logout from "../Logout";
 
 export default function StudentDashboard({ navigation }) {
   const [studentData, setStudentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const BASE_URL = "http://10.11.13.251:5000";
+
+  const getStudentId = async () => {
+    try {
+      const userJson = await AsyncStorage.getItem("user");
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        return user.uid || user.id;
+      }
+      return null;
+    } catch (error) {
+      console.log("Get user error:", error);
+      return null;
+    }
+  };
+
+  const fetchStudent = async () => {
+    try {
+      const uid = await getStudentId();
+      
+      if (!uid) {
+        console.log("No user logged in");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${BASE_URL}/api/users/${uid}`);
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStudentData(data);
+      } else {
+        console.log(data.message);
+        // Try to get from AsyncStorage as fallback
+        const userJson = await AsyncStorage.getItem("user");
+        if (userJson) {
+          const user = JSON.parse(userJson);
+          setStudentData(user);
+        }
+      }
+    } catch (error) {
+      console.log("Fetch error:", error.message);
+      // Fallback to AsyncStorage
+      const userJson = await AsyncStorage.getItem("user");
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setStudentData(user);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStudent = async () => {
-      try {
-        const uid = auth.currentUser.uid;
-
-        const response = await fetch(
-          `http://192.168.156.177:5000/api/users/${uid}`
-        );
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setStudentData(data);
-        } else {
-          console.log(data.message);
-        }
-      } catch (error) {
-        console.log("Fetch error:", error.message);
-      }
-    };
-
     fetchStudent();
   }, []);
 
-  if (!studentData)
-    return <Text style={styles.loading}>Loading...</Text>;
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("user");
+      await AsyncStorage.removeItem("token");
+      navigation.replace("Login");
+    } catch (error) {
+      console.log("Logout error:", error.message);
+    }
+  };
 
   const menu = [
-    { title: "Monitoring", screen: "StudentMonitoring" },
     { title: "Ratings", screen: "StudentRating" },
     { title: "Attendance", screen: "StudentAttendance" },
     { title: "Register Modules", screen: "StudentRegisterModules" },
   ];
+
+  const handleNavigate = (screen) => {
+    // Pass the student data to the next screen
+    navigation.navigate(screen, { user: studentData });
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#22c55e" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
+  if (!studentData) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>Failed to load user data</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.replace("Login")}>
+          <Text style={styles.retryText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -52,8 +118,13 @@ export default function StudentDashboard({ navigation }) {
         <View>
           <Text style={styles.welcome}>Welcome</Text>
           <Text style={styles.title}>{studentData.name}</Text>
+          <Text style={styles.subtitle}>Email: {studentData.email}</Text>
+          <Text style={styles.subtitle}>Faculty: {studentData.faculty || "Not set"}</Text>
+          <Text style={styles.subtitle}>Semester: {studentData.semester || "Not set"}</Text>
         </View>
-        <Logout navigation={navigation} />
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.grid}>
@@ -62,10 +133,10 @@ export default function StudentDashboard({ navigation }) {
             key={i}
             style={styles.card}
             activeOpacity={0.85}
-            onPress={() => navigation.navigate(item.screen)}
+            onPress={() => handleNavigate(item.screen)}
           >
             <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardSub}>Open</Text>
+            <Text style={styles.cardSub}>Tap to open</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -80,10 +151,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
   },
 
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+  },
+
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 25,
   },
 
@@ -97,6 +175,12 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#f8fafc",
     marginTop: 2,
+  },
+
+  subtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 4,
   },
 
   grid: {
@@ -133,12 +217,39 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  loading: {
-    flex: 1,
-    textAlign: "center",
-    marginTop: 100,
-    fontSize: 16,
+  loadingText: {
     color: "#94a3b8",
-    backgroundColor: "#0f172a",
+    marginTop: 10,
+  },
+
+  errorText: {
+    color: "#ef4444",
+    fontSize: 16,
+    marginBottom: 15,
+  },
+
+  retryBtn: {
+    backgroundColor: "#facc15",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+
+  retryText: {
+    color: "#0f172a",
+    fontWeight: "700",
+  },
+
+  logoutBtn: {
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+
+  logoutText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });

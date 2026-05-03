@@ -17,7 +17,7 @@ export default function PLClasses() {
       try {
         setError(null);
 
-        const res = await fetch("http://192.168.156.177:5000/api/courses");
+        const res = await fetch("http://10.11.13.251:5000/api/courses");
 
         if (!res.ok) {
           throw new Error("Failed to fetch courses");

@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 
 export default function PLCreateCourse() {
@@ -16,9 +17,20 @@ export default function PLCreateCourse() {
   const [modules, setModules] = useState([
     { moduleName: "", moduleCode: "" },
   ]);
+  const [loading, setLoading] = useState(false);
 
   const addModuleField = () => {
     setModules([...modules, { moduleName: "", moduleCode: "" }]);
+  };
+
+  const removeModuleField = (index) => {
+    if (modules.length === 1) {
+      Alert.alert("Error", "At least one module is required");
+      return;
+    }
+    const updated = [...modules];
+    updated.splice(index, 1);
+    setModules(updated);
   };
 
   const updateModule = (index, field, value) => {
@@ -34,7 +46,7 @@ export default function PLCreateCourse() {
     }
 
     const validModules = modules.filter(
-      (m) => m.moduleName && m.moduleCode
+      (m) => m.moduleName.trim() && m.moduleCode.trim()
     );
 
     if (validModules.length === 0) {
@@ -43,20 +55,26 @@ export default function PLCreateCourse() {
     }
 
     try {
-      const response = await fetch("http://192.168.156.177:5000/api/courses", {
+      setLoading(true);
+
+      const response = await fetch("http://10.11.13.251:5000/api/courses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          courseName,
-          faculty,
-          classYear,
-          modules: validModules,
+          courseName: courseName.trim(),
+          faculty: faculty.trim(),
+          classYear: classYear.trim(),
+          modules: validModules.map(m => ({
+            moduleName: m.moduleName.trim(),
+            moduleCode: m.moduleCode.trim(),
+          })),
         }),
       });
 
       const data = await response.json();
+      
       if (!response.ok) throw new Error(data.message);
 
       Alert.alert("Success", "Course created successfully");
@@ -67,6 +85,8 @@ export default function PLCreateCourse() {
       setModules([{ moduleName: "", moduleCode: "" }]);
     } catch (error) {
       Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +111,7 @@ export default function PLCreateCourse() {
       />
 
       <TextInput
-        placeholder="Class (Y1, Y2...)"
+        placeholder="Class (Y1, Y2, Y3, Y4)"
         placeholderTextColor="#94a3b8"
         style={styles.input}
         value={classYear}
@@ -102,14 +122,19 @@ export default function PLCreateCourse() {
 
       {modules.map((mod, index) => (
         <View key={index} style={styles.moduleBox}>
+          <View style={styles.moduleHeader}>
+            <Text style={styles.moduleTitle}>Module {index + 1}</Text>
+            <TouchableOpacity onPress={() => removeModuleField(index)}>
+              <Text style={styles.removeText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+
           <TextInput
             placeholder="Module Name"
             placeholderTextColor="#94a3b8"
             style={styles.input}
             value={mod.moduleName}
-            onChangeText={(text) =>
-              updateModule(index, "moduleName", text)
-            }
+            onChangeText={(text) => updateModule(index, "moduleName", text)}
           />
 
           <TextInput
@@ -117,19 +142,25 @@ export default function PLCreateCourse() {
             placeholderTextColor="#94a3b8"
             style={styles.input}
             value={mod.moduleCode}
-            onChangeText={(text) =>
-              updateModule(index, "moduleCode", text)
-            }
+            onChangeText={(text) => updateModule(index, "moduleCode", text)}
           />
         </View>
       ))}
 
       <TouchableOpacity style={styles.addBtn} onPress={addModuleField}>
-        <Text style={styles.btnText}>Add Module</Text>
+        <Text style={styles.btnText}>+ Add Module</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={handleCreate}>
-        <Text style={styles.btnText}>Create Course</Text>
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleCreate}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.btnText}>Create Course</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -163,38 +194,31 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
 
+  moduleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
   moduleTitle: {
     fontWeight: "700",
-    marginBottom: 8,
-    color: "#e2e8f0",
+    color: "#facc15",
+  },
+
+  removeText: {
+    color: "#ef4444",
+    fontWeight: "600",
   },
 
   input: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#0f172a",
     borderWidth: 1,
     borderColor: "#334155",
     padding: 12,
     marginBottom: 10,
     borderRadius: 12,
     color: "#e2e8f0",
-  },
-
-  preview: {
-    backgroundColor: "#020617",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-
-  previewLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
-  },
-
-  previewText: {
-    color: "#facc15",
-    fontWeight: "700",
-    marginTop: 4,
   },
 
   addBtn: {
@@ -209,6 +233,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 15,
     borderRadius: 14,
+  },
+
+  buttonDisabled: {
+    backgroundColor: "#166534",
   },
 
   btnText: {
