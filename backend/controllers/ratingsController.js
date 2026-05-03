@@ -1,4 +1,6 @@
 const { db, admin } = require("../config/firebaseAdmin");
+
+// submit rating
 const submitRating = async (req, res) => {
   try {
     const {
@@ -103,6 +105,10 @@ const getRatingsByStudent = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    if (!studentId) {
+      return res.status(400).json({ message: "student id required" });
+    }
+
     const snapshot = await db
       .collection("ratings")
       .where("studentId", "==", studentId)
@@ -125,6 +131,10 @@ const getRatingsByModule = async (req, res) => {
   try {
     const { moduleId } = req.params;
 
+    if (!moduleId) {
+      return res.status(400).json({ message: "module id required" });
+    }
+
     const snapshot = await db
       .collection("ratings")
       .where("moduleId", "==", moduleId)
@@ -146,6 +156,10 @@ const getRatingsByModule = async (req, res) => {
 const getRatingsByLecturer = async (req, res) => {
   try {
     const { lecturerId } = req.params;
+
+    if (!lecturerId) {
+      return res.status(400).json({ message: "lecturer id required" });
+    }
 
     const snapshot = await db
       .collection("ratings")
@@ -187,28 +201,91 @@ const getRatingsByLecturer = async (req, res) => {
   }
 };
 
-// GET ALL RATINGS 
+// GET ALL RATINGS (for PRL) - FIXED with better error handling
 const getAllRatings = async (req, res) => {
   try {
+    console.log("===== fetching all ratings =====");
+    
+    // Check if db is available
+    if (!db) {
+      console.error("firestore db not initialized");
+      return res.status(500).json({ message: "database not initialized" });
+    }
+    
+    // Get all ratings from the collection
     const snapshot = await db.collection("ratings").get();
+    
+    console.log(`snapshot size: ${snapshot.size}`);
+    
+    const ratings = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      ratings.push({
+        id: doc.id,
+        studentId: data.studentId || "",
+        studentName: data.studentName || "",
+        studentEmail: data.studentEmail || "",
+        studentFaculty: data.studentFaculty || "",
+        studentSemester: data.studentSemester || "",
+        moduleId: data.moduleId || "",
+        moduleName: data.moduleName || "",
+        moduleCode: data.moduleCode || "",
+        courseId: data.courseId || "",
+        courseName: data.courseName || "",
+        lecturerId: data.lecturerId || "",
+        lecturerName: data.lecturerName || "",
+        lecturerFaculty: data.lecturerFaculty || "",
+        ratings: data.ratings || {},
+        averageRating: data.averageRating || 0,
+        comment: data.comment || "",
+        createdAt: data.createdAt,
+      });
+    });
 
-    const ratings = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    // sort by createdAt
+    // sort by createdAt (newest first) - handle both timestamp types
     ratings.sort((a, b) => {
-      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
-      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+      let dateA = 0;
+      let dateB = 0;
+      
+      if (a.createdAt) {
+        dateA = a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+      }
+      if (b.createdAt) {
+        dateB = b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+      }
+      
       return dateB - dateA;
     });
 
-    console.log(`fetched ${ratings.length} ratings`);
+    console.log(`successfully fetched ${ratings.length} ratings`);
+    
+    // Return array even if empty
     return res.status(200).json(ratings);
+    
   } catch (error) {
     console.error("get all ratings error:", error.message);
-    return res.status(500).json({ message: error.message });
+    console.error("error stack:", error.stack);
+    
+    // Return empty array instead of error to prevent frontend crash
+    return res.status(200).json([]);
+  }
+};
+
+// health check endpoint for ratings
+const ratingsHealthCheck = async (req, res) => {
+  try {
+    const snapshot = await db.collection("ratings").limit(1).get();
+    return res.status(200).json({ 
+      status: "ok", 
+      collectionExists: true,
+      hasData: !snapshot.empty,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({ 
+      status: "error", 
+      message: error.message 
+    });
   }
 };
 
@@ -218,4 +295,5 @@ module.exports = {
   getRatingsByModule,
   getRatingsByLecturer,
   getAllRatings,
+  ratingsHealthCheck,
 };

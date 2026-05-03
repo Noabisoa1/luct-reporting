@@ -6,12 +6,14 @@ const {
   getRatingsByModule,
   getRatingsByLecturer,
   getAllRatings,
+  ratingsHealthCheck,
 } = require("../controllers/ratingsController");
 
-router.post("/ratings", submitRating);
+router.get("/ratings/health", ratingsHealthCheck);
+router.get("/ratings", getAllRatings);
 router.get("/ratings/student/:studentId", getRatingsByStudent);
 router.get("/ratings/module/:moduleId", getRatingsByModule);
 router.get("/ratings/lecturer/:lecturerId", getRatingsByLecturer);
-router.get("/ratings", getAllRatings);  
+router.post("/ratings", submitRating);
 
 module.exports = router;

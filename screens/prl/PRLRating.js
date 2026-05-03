@@ -19,6 +19,7 @@ export default function PRLRating() {
   const [selectedLecturer, setSelectedLecturer] = useState(null);
   const [lecturerRatings, setLecturerRatings] = useState([]);
   const [showDetails, setShowDetails] = useState(false);
+  const [error, setError] = useState(null);
 
   const BASE_URL = "http://10.11.13.251:5000";
 
@@ -56,28 +57,47 @@ export default function PRLRating() {
 
   const fetchRatings = async () => {
     try {
-      // fetch all ratings from the new endpoint
+      setError(null);
+      console.log("fetching ratings from:", `${BASE_URL}/api/ratings`);
+      
       const res = await fetch(`${BASE_URL}/api/ratings`);
-      const data = await res.json();
-
+      
+      console.log("response status:", res.status);
+      
       if (!res.ok) {
-        throw new Error(data.message || "failed to load ratings");
+        throw new Error(`http ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log("ratings data received:", data?.length || 0, "records");
+      
+      if (!Array.isArray(data)) {
+        console.log("data is not an array, using empty array");
+        setLecturers([]);
+        setLoading(false);
+        return;
       }
 
-      // get all ratings
-      let allRatings = Array.isArray(data) ? data : [];
-      
       // filter by faculty if PRL has faculty
+      let allRatings = data;
       if (userData?.faculty) {
         allRatings = allRatings.filter(r => r.lecturerFaculty === userData.faculty);
+        console.log(`filtered to ${allRatings.length} ratings for faculty ${userData.faculty}`);
+      }
+
+      if (allRatings.length === 0) {
+        console.log("no ratings found");
+        setLecturers([]);
+        setLoading(false);
+        return;
       }
 
       // group by lecturer
       const lecturerMap = {};
 
       allRatings.forEach((rating) => {
-        const lecturerId = rating.lecturerId;
-        const lecturerName = rating.lecturerName || "unknown";
+        const lecturerId = rating.lecturerId || rating.id || "unknown";
+        const lecturerName = rating.lecturerName || "unknown lecturer";
         const avgRating = rating.averageRating || 0;
 
         if (!lecturerMap[lecturerId]) {
@@ -95,15 +115,14 @@ export default function PRLRating() {
         lecturerMap[lecturerId].totalRatings += 1;
         lecturerMap[lecturerId].sumRatings += avgRating;
         lecturerMap[lecturerId].ratings.push({
-          studentId: rating.studentId,
-          studentName: rating.studentName,
-          studentEmail: rating.studentEmail,
-          moduleName: rating.moduleName,
-          moduleCode: rating.moduleCode,
+          studentId: rating.studentId || "",
+          studentName: rating.studentName || "",
+          studentEmail: rating.studentEmail || "",
+          moduleName: rating.moduleName || "",
+          moduleCode: rating.moduleCode || "",
           rating: avgRating,
-          comment: rating.comment,
+          comment: rating.comment || "",
           date: rating.createdAt,
-          ratings: rating.ratings,
         });
       });
 
@@ -120,7 +139,8 @@ export default function PRLRating() {
       console.log(`loaded ${lecturersList.length} lecturers with ratings`);
     } catch (error) {
       console.log("fetch ratings error:", error.message);
-      Alert.alert("error", error.message);
+      setError(error.message);
+      Alert.alert("error", "failed to load ratings: " + error.message);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,7 +150,7 @@ export default function PRLRating() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await fetchUserData();
+      const user = await fetchUserData();
       await fetchRatings();
     };
     loadData();
@@ -173,10 +193,13 @@ export default function PRLRating() {
   const formatDate = (dateString) => {
     if (!dateString) return "unknown";
     try {
+      if (dateString.toDate) {
+        return dateString.toDate().toLocaleDateString();
+      }
       const date = new Date(dateString);
       return date.toLocaleDateString();
     } catch {
-      return dateString;
+      return "unknown";
     }
   };
 
@@ -185,6 +208,17 @@ export default function PRLRating() {
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#22c55e" />
         <Text style={styles.loadingText}>loading ratings...</Text>
+      </View>
+    );
+  }
+
+  if (error && lecturers.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={fetchRatings}>
+          <Text style={styles.retryText}>retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -235,9 +269,9 @@ export default function PRLRating() {
             <View key={index} style={styles.feedbackCard}>
               <View style={styles.feedbackHeader}>
                 <Text style={styles.moduleName}>{rating.moduleName} ({rating.moduleCode})</Text>
-                <Text style={[styles.ratingBadge, { backgroundColor: getRatingColor(rating.rating) }]}>
-                  {rating.rating} / 5
-                </Text>
+                <View style={[styles.ratingBadge, { backgroundColor: getRatingColor(rating.rating) }]}>
+                  <Text style={styles.ratingBadgeText}>{rating.rating}</Text>
+                </View>
               </View>
               <Text style={styles.feedbackDate}>submitted: {formatDate(rating.date)}</Text>
               {rating.comment && rating.comment.trim() !== "" && (
@@ -301,7 +335,10 @@ export default function PRLRating() {
                 <View 
                   style={[
                     styles.progressFillPreview, 
-                    { width: `${(lecturer.average / 5) * 100}%`, backgroundColor: getRatingColor(lecturer.average) }
+                    { 
+                      width: `${(parseFloat(lecturer.average) / 5) * 100}%`, 
+                      backgroundColor: getRatingColor(lecturer.average) 
+                    }
                   ]} 
                 />
               </View>
@@ -332,6 +369,25 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#94a3b8",
     marginTop: 10,
+  },
+
+  errorText: {
+    color: "#ef4444",
+    fontSize: 16,
+    marginBottom: 15,
+  },
+
+  retryBtn: {
+    backgroundColor: "#facc15",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 15,
+  },
+
+  retryText: {
+    color: "#0f172a",
+    fontWeight: "700",
   },
 
   title: {
@@ -547,6 +603,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+
+  ratingBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   feedbackDate: {
