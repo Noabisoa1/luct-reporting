@@ -28,7 +28,7 @@ export default function LecturerReports() {
   });
   const [updating, setUpdating] = useState(false);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const getLecturerId = async () => {
     try {

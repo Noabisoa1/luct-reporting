@@ -41,7 +41,7 @@ export default function StudentRating() {
   const [ratings, setRatings] = useState({});
   const [comment, setComment] = useState("");
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   useEffect(() => {
     loadData();

@@ -26,7 +26,7 @@ export default function LecturerAttendance({ route, navigation }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittedData, setSubmittedData] = useState(null);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   // Fetch user from AsyncStorage if not passed via params
   const loadUserFromStorage = async () => {

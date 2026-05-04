@@ -17,7 +17,7 @@ export default function StudentAttendance() {
   const [refreshing, setRefreshing] = useState(false);
   const [studentData, setStudentData] = useState(null);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const getStudentId = async () => {
     try {

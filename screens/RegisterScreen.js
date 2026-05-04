@@ -52,7 +52,7 @@ export default function RegisterScreen({ navigation }) {
     try {
       setLoading(true);
 
-      const response = await fetch("http://10.11.13.251:5000/api/auth/register", {
+      const response = await fetch("https://luct-reporting-2-932p.onrender.com/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

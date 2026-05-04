@@ -26,7 +26,7 @@ export default function LoginScreen({ navigation }) {
 
       console.log("Attempting login for:", email);
 
-      const response = await fetch("http://10.11.13.251:5000/api/auth/login", {
+      const response = await fetch("https://luct-reporting-2-932p.onrender.com/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

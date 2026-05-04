@@ -28,7 +28,7 @@ export default function PRLCourses() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedFeedback, setSubmittedFeedback] = useState({});
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const getUserId = async () => {
     try {

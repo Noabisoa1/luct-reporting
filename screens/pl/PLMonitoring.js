@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  RefreshControl,
   TouchableOpacity,
-  Alert,
+  View
 } from "react-native";
 
 export default function PLMonitoring() {
@@ -30,7 +29,7 @@ export default function PLMonitoring() {
   const [reports, setReports] = useState([]);
   const [recentReports, setRecentReports] = useState([]);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const loadData = async () => {
     try {

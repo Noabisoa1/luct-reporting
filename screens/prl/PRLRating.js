@@ -21,7 +21,7 @@ export default function PRLRating() {
   const [showDetails, setShowDetails] = useState(false);
   const [error, setError] = useState(null);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const getUserId = async () => {
     try {
@@ -215,7 +215,7 @@ export default function PRLRating() {
   if (error && lecturers.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>⚠️ {error}</Text>
+        <Text style={styles.errorText}> {error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={fetchRatings}>
           <Text style={styles.retryText}>retry</Text>
         </TouchableOpacity>
@@ -261,7 +261,7 @@ export default function PRLRating() {
 
         {lecturerRatings.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>💬</Text>
+            <Text style={styles.emptyIcon}></Text>
             <Text style={styles.emptyText}>no feedback yet</Text>
           </View>
         ) : (
@@ -309,7 +309,7 @@ export default function PRLRating() {
 
       {lecturers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>⭐</Text>
+          <Text style={styles.emptyIcon}></Text>
           <Text style={styles.emptyText}>no ratings found</Text>
           <Text style={styles.emptySubtext}>ratings will appear here once students rate lecturers</Text>
         </View>
@@ -327,7 +327,7 @@ export default function PRLRating() {
               <Text style={styles.lecturerFaculty}>faculty: {lecturer.faculty || "not specified"}</Text>
               
               <View style={styles.ratingStats}>
-                <Text style={styles.ratingCount}>📊 {lecturer.totalRatings} rating{lecturer.totalRatings !== 1 ? "s" : ""}</Text>
+                <Text style={styles.ratingCount}>{lecturer.totalRatings} rating{lecturer.totalRatings !== 1 ? "s" : ""}</Text>
                 <Text style={styles.ratingInsight}>{getRatingInsight(lecturer.average)}</Text>
               </View>
 

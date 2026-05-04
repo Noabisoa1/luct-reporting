@@ -16,7 +16,7 @@ export default function LecturerClasses() {
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(null);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const getLecturerId = async () => {
     try {

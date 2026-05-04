@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  RefreshControl,
 } from "react-native";
 
 export default function PLAssignLecturers() {
@@ -23,7 +23,7 @@ export default function PLAssignLecturers() {
   const [refreshing, setRefreshing] = useState(false);
   const [assigning, setAssigning] = useState(false);
 
-  const BASE_URL = "http://10.11.13.251:5000";
+  const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
   const fetchCourses = async () => {
     try {

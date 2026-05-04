@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
@@ -7,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 
 export default function PLCreateCourse() {
@@ -57,7 +57,7 @@ export default function PLCreateCourse() {
     try {
       setLoading(true);
 
-      const response = await fetch("http://10.11.13.251:5000/api/courses", {
+      const response = await fetch("https://luct-reporting-2-932p.onrender.com/api/courses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
