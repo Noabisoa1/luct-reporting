@@ -150,8 +150,7 @@ export default function LecturerReports() {
       setUpdating(false);
     }
   };
-
-  const deleteReport = async (report) => {
+const deleteReport = async (report) => {
   Alert.alert(
     "confirm delete",
     `are you sure you want to delete the report for ${report.moduleName}?`,
@@ -162,20 +161,19 @@ export default function LecturerReports() {
         style: "destructive",
         onPress: async () => {
           try {
-            console.log("deleting report id:", report.id);
+            console.log("Deleting report:", report.id);
             
             const response = await fetch(`${BASE_URL}/api/reports/${report.id}`, {
               method: "DELETE",
               headers: {
-                "Accept": "application/json",
                 "Content-Type": "application/json",
               },
             });
 
-            console.log("response status:", response.status);
+            console.log("Response status:", response.status);
             
             const result = await response.json();
-            console.log("response data:", result);
+            console.log("Response data:", result);
 
             if (!response.ok) {
               throw new Error(result.message || "failed to delete");
@@ -187,7 +185,7 @@ export default function LecturerReports() {
             Alert.alert("success", "report deleted successfully");
             
           } catch (error) {
-            console.log("delete error:", error);
+            console.log("Delete error:", error);
             Alert.alert("error", error.message);
           }
         },

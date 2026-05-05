@@ -237,35 +237,46 @@ const deleteReport = async (req, res) => {
     const { reportId } = req.params;
 
     console.log("=== DELETE REQUEST RECEIVED ===");
-    console.log("reportId:", reportId);
-    console.log("request method:", req.method);
-    console.log("request url:", req.url);
+    console.log("Report ID:", reportId);
+    console.log("Request method:", req.method);
+    console.log("Request URL:", req.url);
 
     if (!reportId) {
-      console.log("no report id provided");
-      return res.status(400).json({ success: false, message: "report id required" });
+      console.log("No report ID provided");
+      return res.status(400).json({ 
+        success: false, 
+        message: "report id required" 
+      });
     }
 
+    // Check if report exists
     const reportRef = db.collection("reports").doc(reportId);
     const reportSnap = await reportRef.get();
 
     if (!reportSnap.exists) {
-      console.log("report not found in database");
-      return res.status(404).json({ success: false, message: "report not found" });
+      console.log("Report not found in database");
+      return res.status(404).json({ 
+        success: false, 
+        message: "report not found" 
+      });
     }
 
-    console.log("report found, deleting...");
+    console.log("Report found, deleting...");
     await reportRef.delete();
-    console.log("report deleted successfully");
+    console.log("Report deleted successfully");
 
-    return res.status(200).json({
-      success: true,
-      message: "report deleted successfully",
+    return res.status(200).json({ 
+      success: true, 
+      message: "report deleted successfully" 
     });
+    
   } catch (error) {
-    console.error("delete report error:", error.message);
-    console.error("error stack:", error.stack);
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Delete report error:", error.message);
+    console.error("Error stack:", error.stack);
+    return res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
 
