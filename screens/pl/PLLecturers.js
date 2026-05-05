@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -18,10 +19,13 @@ export default function PLAssignLecturers() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedLecturer, setSelectedLecturer] = useState(null);
+  const [unassignModalVisible, setUnassignModalVisible] = useState(false);
+  const [moduleToUnassign, setModuleToUnassign] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [unassigning, setUnassigning] = useState(false);
 
   const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
@@ -29,12 +33,11 @@ export default function PLAssignLecturers() {
     try {
       const res = await fetch(`${BASE_URL}/api/courses`);
       const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Failed to load courses");
-
+      if (!res.ok) throw new Error(data.message || "failed to load courses");
       setCourses(Array.isArray(data) ? data : []);
     } catch (err) {
-      Alert.alert("Error", err.message);
+      console.log("fetch courses error:", err.message);
+      Alert.alert("error", err.message);
     }
   };
 
@@ -42,12 +45,11 @@ export default function PLAssignLecturers() {
     try {
       const res = await fetch(`${BASE_URL}/api/users?role=lecturer`);
       const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Failed to load lecturers");
-
+      if (!res.ok) throw new Error(data.message || "failed to load lecturers");
       setLecturers(Array.isArray(data) ? data : []);
     } catch (err) {
-      Alert.alert("Error", err.message);
+      console.log("fetch lecturers error:", err.message);
+      Alert.alert("error", err.message);
     }
   };
 
@@ -59,14 +61,14 @@ export default function PLAssignLecturers() {
       const res = await fetch(`${BASE_URL}/api/courses/modules/course/${courseId}`);
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Failed to load modules");
+      if (!res.ok) throw new Error(data.message || "failed to load modules");
 
       const safeModules = Array.isArray(data) ? data : [];
-
       setModules(safeModules);
       setSelectedModule(null);
     } catch (err) {
-      Alert.alert("Error", err.message);
+      console.log("load modules error:", err.message);
+      Alert.alert("error", err.message);
     } finally {
       setLoading(false);
     }
@@ -90,14 +92,14 @@ export default function PLAssignLecturers() {
   const handleAssign = async () => {
     try {
       if (!selectedModule || !selectedLecturer) {
-        Alert.alert("Error", "Select module and lecturer");
+        Alert.alert("error", "select module and lecturer");
         return;
       }
 
       if (selectedModule.lecturerId) {
         Alert.alert(
-          "Already Assigned",
-          `Already assigned to ${selectedModule.lecturerName}`
+          "already assigned",
+          `already assigned to ${selectedModule.lecturerName}`
         );
         return;
       }
@@ -115,9 +117,9 @@ export default function PLAssignLecturers() {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Assignment failed");
+      if (!res.ok) throw new Error(data.message || "assignment failed");
 
-      Alert.alert("Success", `Assigned ${selectedLecturer.name} to ${selectedModule.moduleName}`);
+      Alert.alert("success", `assigned ${selectedLecturer.name} to ${selectedModule.moduleName}`);
 
       setSelectedModule(null);
       setSelectedLecturer(null);
@@ -126,48 +128,59 @@ export default function PLAssignLecturers() {
         await loadModules(selectedCourse.id);
       }
     } catch (error) {
-      Alert.alert("Error", error.message);
+      console.log("assign error:", error.message);
+      Alert.alert("error", error.message);
     } finally {
       setAssigning(false);
     }
   };
 
-  const handleRemoveLecturer = async (moduleId, moduleName, lecturerName) => {
-    Alert.alert(
-      "Remove Assignment",
-      `Remove ${lecturerName} from ${moduleName}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setAssigning(true);
-              
-              const res = await fetch(`${BASE_URL}/api/courses/modules/${moduleId}/remove-lecturer`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-              });
+  const openUnassignModal = (module) => {
+    if (!module.lecturerId) {
+      Alert.alert("info", "no lecturer assigned to this module");
+      return;
+    }
+    setModuleToUnassign(module);
+    setUnassignModalVisible(true);
+  };
 
-              const data = await res.json();
+  const handleUnassign = async () => {
+    if (!moduleToUnassign) return;
 
-              if (!res.ok) throw new Error(data.message || "Removal failed");
+    setUnassigning(true);
 
-              Alert.alert("Success", "Lecturer removed successfully");
+    try {
+      const res = await fetch(`${BASE_URL}/api/courses/modules/${moduleToUnassign.id}/lecturer`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
 
-              if (selectedCourse) {
-                await loadModules(selectedCourse.id);
-              }
-            } catch (error) {
-              Alert.alert("Error", error.message);
-            } finally {
-              setAssigning(false);
-            }
-          },
-        },
-      ]
-    );
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "failed to unassign lecturer");
+
+      Alert.alert("success", `removed ${moduleToUnassign.lecturerName} from ${moduleToUnassign.moduleName}`);
+
+      setUnassignModalVisible(false);
+      setModuleToUnassign(null);
+
+      if (selectedCourse) {
+        await loadModules(selectedCourse.id);
+      }
+    } catch (error) {
+      console.log("unassign error:", error.message);
+      Alert.alert("error", error.message);
+    } finally {
+      setUnassigning(false);
+    }
+  };
+
+  const getAssignedStatusColor = (lecturerId) => {
+    return lecturerId ? "#22c55e" : "#facc15";
+  };
+
+  const getAssignedStatusText = (lecturerId, lecturerName) => {
+    return lecturerId ? `assigned to: ${lecturerName}` : "not assigned";
   };
 
   if (loading && !refreshing) {
@@ -180,15 +193,15 @@ export default function PLAssignLecturers() {
 
   return (
     <ScrollView 
-      contentContainerStyle={styles.container}
+      style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={refreshAll} colors={["#22c55e"]} />
       }
     >
-      <Text style={styles.title}>Assign Lecturers</Text>
+      <Text style={styles.title}>assign lecturers</Text>
 
-      {/* COURSES */}
-      <Text style={styles.subtitle}>Select Course</Text>
+      {/* courses */}
+      <Text style={styles.subtitle}>select course</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.row}>
           {courses.map((c) => (
@@ -210,71 +223,65 @@ export default function PLAssignLecturers() {
             </TouchableOpacity>
           ))}
           {courses.length === 0 && (
-            <Text style={styles.emptyText}>No courses available</Text>
+            <Text style={styles.emptyText}>no courses available</Text>
           )}
         </View>
       </ScrollView>
 
-      {/* MODULES */}
-      <Text style={styles.subtitle}>Modules</Text>
+      {/* modules */}
+      <Text style={styles.subtitle}>modules</Text>
 
       {modules.length === 0 && selectedCourse && (
-        <Text style={styles.emptyText}>No modules found for this course</Text>
+        <Text style={styles.emptyText}>no modules found for this course</Text>
       )}
 
       {!selectedCourse && (
-        <Text style={styles.emptyText}>Select a course to view modules</Text>
+        <Text style={styles.emptyText}>select a course to view modules</Text>
       )}
 
       {modules.map((m) => {
         const isAssigned = !!m.lecturerId;
 
         return (
-          <TouchableOpacity
-            key={m.id}
-            style={[
-              styles.moduleCard,
-              selectedModule?.id === m.id && styles.selected,
-              isAssigned && styles.assignedCard,
-            ]}
-            onPress={() => {
-              if (isAssigned) {
-                Alert.alert(
-                  "Already Assigned",
-                  `Module is assigned to ${m.lecturerName}`
-                );
-                return;
-              }
-              setSelectedModule(m);
-            }}
-            onLongPress={() => {
-              if (isAssigned) {
-                handleRemoveLecturer(m.id, m.moduleName, m.lecturerName);
-              }
-            }}
-          >
+          <View key={m.id} style={styles.moduleCard}>
             <View style={styles.moduleHeader}>
-              <Text style={styles.cardTitle}>{m.moduleName}</Text>
-              {isAssigned && (
-                <TouchableOpacity 
-                  onPress={() => handleRemoveLecturer(m.id, m.moduleName, m.lecturerName)}
+              <Text style={styles.moduleName}>{m.moduleName}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: getAssignedStatusColor(m.lecturerId) }]}>
+                <Text style={styles.statusText}>
+                  {isAssigned ? "assigned" : "unassigned"}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.moduleCode}>code: {m.moduleCode}</Text>
+            <Text style={styles.moduleInfo}>
+              {getAssignedStatusText(m.lecturerId, m.lecturerName)}
+            </Text>
+            
+            <View style={styles.moduleActions}>
+              {!isAssigned ? (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.assignBtn, selectedModule?.id === m.id && styles.selectedModule]}
+                  onPress={() => setSelectedModule(m)}
                 >
-                  <Text style={styles.removeText}>Remove</Text>
+                  <Text style={styles.actionBtnText}>
+                    {selectedModule?.id === m.id ? "selected" : "select to assign"}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.unassignBtn]}
+                  onPress={() => openUnassignModal(m)}
+                >
+                  <Text style={styles.actionBtnText}>remove lecturer</Text>
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.meta}>{m.moduleCode}</Text>
-            <Text style={[styles.statusText, isAssigned && styles.assignedText]}>
-              {isAssigned
-                ? `Assigned to: ${m.lecturerName}`
-                : "Status: Not Assigned"}
-            </Text>
-          </TouchableOpacity>
+          </View>
         );
       })}
 
-      {/* LECTURERS */}
-      <Text style={styles.subtitle}>Select Lecturer</Text>
+      {/* lecturers */}
+      <Text style={styles.subtitle}>select lecturer</Text>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.row}>
@@ -282,46 +289,104 @@ export default function PLAssignLecturers() {
             <TouchableOpacity
               key={l.id}
               style={[
-                styles.card,
-                selectedLecturer?.id === l.id && styles.selected,
+                styles.lecturerCard,
+                selectedLecturer?.id === l.id && styles.selectedLecturer,
               ]}
               onPress={() => setSelectedLecturer(l)}
             >
-              <Text style={styles.cardTitle}>{l.name}</Text>
-              <Text style={styles.meta}>{l.faculty || "No faculty"}</Text>
+              <Text style={styles.lecturerName}>{l.name}</Text>
+              <Text style={styles.lecturerFaculty}>{l.faculty || "no faculty"}</Text>
+              {selectedLecturer?.id === l.id && (
+                <Text style={styles.selectedCheck}>✓ selected</Text>
+              )}
             </TouchableOpacity>
           ))}
           {lecturers.length === 0 && (
-            <Text style={styles.emptyText}>No lecturers available</Text>
+            <Text style={styles.emptyText}>no lecturers available</Text>
           )}
         </View>
       </ScrollView>
 
-      {/* SELECTED INFO */}
+      {/* selected info */}
       {selectedModule && (
         <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Selected Module: {selectedModule.moduleName}</Text>
+          <Text style={styles.infoText}>selected module: {selectedModule.moduleName}</Text>
         </View>
       )}
 
       {selectedLecturer && (
         <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Selected Lecturer: {selectedLecturer.name}</Text>
+          <Text style={styles.infoText}>selected lecturer: {selectedLecturer.name}</Text>
         </View>
       )}
 
-      {/* BUTTON */}
+      {/* assign button */}
       <TouchableOpacity 
-        style={[styles.button, (!selectedModule || !selectedLecturer || assigning) && styles.buttonDisabled]} 
+        style={[styles.assignButton, (!selectedModule || !selectedLecturer || assigning) && styles.disabledBtn]} 
         onPress={handleAssign}
         disabled={!selectedModule || !selectedLecturer || assigning}
       >
         {assigning ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.btnText}>Assign Lecturer</Text>
+          <Text style={styles.assignButtonText}>assign lecturer</Text>
         )}
       </TouchableOpacity>
+
+      {/* unassign confirmation modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={unassignModalVisible}
+        onRequestClose={() => setUnassignModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>remove lecturer</Text>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalText}>
+                are you sure you want to remove
+              </Text>
+              <Text style={styles.modalLecturerName}>
+                {moduleToUnassign?.lecturerName}
+              </Text>
+              <Text style={styles.modalText}>
+                from
+              </Text>
+              <Text style={styles.modalModuleName}>
+                {moduleToUnassign?.moduleName}
+              </Text>
+              <Text style={styles.modalWarning}>
+                this action cannot be undone
+              </Text>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.cancelBtn]}
+                onPress={() => setUnassignModalVisible(false)}
+                disabled={unassigning}
+              >
+                <Text style={styles.cancelBtnText}>cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtn, styles.confirmBtn, unassigning && styles.disabledBtn]}
+                onPress={handleUnassign}
+                disabled={unassigning}
+              >
+                {unassigning ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.confirmBtnText}>remove</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -345,6 +410,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#facc15",
     marginBottom: 12,
+    textTransform: "lowercase",
   },
 
   subtitle: {
@@ -352,6 +418,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontWeight: "700",
     color: "#e2e8f0",
+    textTransform: "lowercase",
   },
 
   row: {
@@ -368,33 +435,16 @@ const styles = StyleSheet.create({
     minWidth: 140,
   },
 
-  moduleCard: {
-    padding: 14,
-    backgroundColor: "#1e293b",
-    marginBottom: 10,
-    borderRadius: 16,
-  },
-
-  moduleHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
   selected: {
     borderWidth: 2,
     borderColor: "#22c55e",
-  },
-
-  assignedCard: {
-    backgroundColor: "#374151",
-    opacity: 0.9,
   },
 
   cardTitle: {
     fontWeight: "700",
     color: "#e2e8f0",
     fontSize: 14,
+    textTransform: "lowercase",
   },
 
   meta: {
@@ -403,43 +453,117 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  statusText: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#ef4444",
-  },
-
-  assignedText: {
-    color: "#22c55e",
-  },
-
-  removeText: {
-    color: "#ef4444",
-    fontWeight: "600",
-    fontSize: 12,
-  },
-
-  button: {
-    backgroundColor: "#22c55e",
+  moduleCard: {
+    backgroundColor: "#1e293b",
     padding: 16,
-    marginTop: 20,
-    borderRadius: 14,
+    borderRadius: 16,
+    marginBottom: 12,
   },
 
-  buttonDisabled: {
-    backgroundColor: "#166534",
+  moduleHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
 
-  btnText: {
-    color: "#fff",
-    textAlign: "center",
+  moduleName: {
+    fontSize: 16,
     fontWeight: "700",
+    color: "#e2e8f0",
+    textTransform: "lowercase",
   },
 
-  emptyText: {
+  moduleCode: {
+    fontSize: 12,
     color: "#94a3b8",
+    marginBottom: 4,
+    textTransform: "lowercase",
+  },
+
+  moduleInfo: {
+    fontSize: 12,
+    color: "#cbd5e1",
     marginBottom: 10,
+    textTransform: "lowercase",
+  },
+
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+
+  statusText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "lowercase",
+  },
+
+  moduleActions: {
+    marginTop: 8,
+  },
+
+  actionBtn: {
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  assignBtn: {
+    backgroundColor: "#334155",
+  },
+
+  unassignBtn: {
+    backgroundColor: "#dc2626",
+  },
+
+  selectedModule: {
+    backgroundColor: "#16a34a",
+  },
+
+  actionBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 12,
+    textTransform: "lowercase",
+  },
+
+  lecturerCard: {
+    padding: 14,
+    backgroundColor: "#1e293b",
+    marginRight: 10,
+    marginBottom: 10,
+    borderRadius: 16,
+    minWidth: 140,
+    alignItems: "center",
+  },
+
+  selectedLecturer: {
+    borderWidth: 2,
+    borderColor: "#22c55e",
+  },
+
+  lecturerName: {
+    fontWeight: "700",
+    color: "#e2e8f0",
+    fontSize: 14,
+    textTransform: "lowercase",
+  },
+
+  lecturerFaculty: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginTop: 4,
+  },
+
+  selectedCheck: {
+    fontSize: 10,
+    color: "#22c55e",
+    marginTop: 6,
+    fontWeight: "600",
   },
 
   infoBox: {
@@ -452,5 +576,133 @@ const styles = StyleSheet.create({
   infoText: {
     color: "#facc15",
     fontWeight: "600",
+    textTransform: "lowercase",
+  },
+
+  assignButton: {
+    backgroundColor: "#22c55e",
+    padding: 16,
+    marginTop: 20,
+    borderRadius: 14,
+    marginBottom: 30,
+  },
+
+  disabledBtn: {
+    backgroundColor: "#166534",
+    opacity: 0.6,
+  },
+
+  assignButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700",
+    textTransform: "lowercase",
+  },
+
+  emptyText: {
+    color: "#94a3b8",
+    marginBottom: 10,
+    textTransform: "lowercase",
+  },
+
+  // modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContent: {
+    backgroundColor: "#1e293b",
+    borderRadius: 20,
+    width: "85%",
+    overflow: "hidden",
+  },
+
+  modalHeader: {
+    padding: 16,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#fff",
+    textTransform: "lowercase",
+  },
+
+  modalBody: {
+    padding: 20,
+    alignItems: "center",
+  },
+
+  modalText: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginBottom: 5,
+    textTransform: "lowercase",
+  },
+
+  modalLecturerName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#facc15",
+    textAlign: "center",
+    marginBottom: 5,
+    textTransform: "lowercase",
+  },
+
+  modalModuleName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#22c55e",
+    textAlign: "center",
+    marginBottom: 10,
+    textTransform: "lowercase",
+  },
+
+  modalWarning: {
+    fontSize: 12,
+    color: "#ef4444",
+    textAlign: "center",
+    fontStyle: "italic",
+    textTransform: "lowercase",
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+  },
+
+  modalBtn: {
+    flex: 1,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  cancelBtn: {
+    backgroundColor: "#334155",
+    borderRightWidth: 1,
+    borderRightColor: "#334155",
+  },
+
+  cancelBtnText: {
+    color: "#e2e8f0",
+    fontWeight: "600",
+    textTransform: "lowercase",
+  },
+
+  confirmBtn: {
+    backgroundColor: "#dc2626",
+  },
+
+  confirmBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    textTransform: "lowercase",
   },
 });

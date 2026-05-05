@@ -19,6 +19,7 @@ export default function LecturerReports() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [editForm, setEditForm] = useState({
     topic: "",
     learningOutcomes: "",
@@ -27,6 +28,7 @@ export default function LecturerReports() {
     week: "",
   });
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const BASE_URL = "https://luct-reporting-2-932p.onrender.com";
 
@@ -98,6 +100,11 @@ export default function LecturerReports() {
     setEditModalVisible(true);
   };
 
+  const openDeleteModal = (report) => {
+    setSelectedReport(report);
+    setDeleteModalVisible(true);
+  };
+
   const handleEditChange = (field, value) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
@@ -150,49 +157,40 @@ export default function LecturerReports() {
       setUpdating(false);
     }
   };
-const deleteReport = async (report) => {
-  Alert.alert(
-    "confirm delete",
-    `are you sure you want to delete the report for ${report.moduleName}?`,
-    [
-      { text: "cancel", style: "cancel" },
-      {
-        text: "delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            console.log("Deleting report:", report.id);
-            
-            const response = await fetch(`${BASE_URL}/api/reports/${report.id}`, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            });
 
-            console.log("Response status:", response.status);
-            
-            const result = await response.json();
-            console.log("Response data:", result);
+  const confirmDelete = async () => {
+    if (!selectedReport) return;
 
-            if (!response.ok) {
-              throw new Error(result.message || "failed to delete");
-            }
+    setDeleting(true);
 
-            // Remove from local state
-            setReports(prevReports => prevReports.filter(r => r.id !== report.id));
-            
-            Alert.alert("success", "report deleted successfully");
-            
-          } catch (error) {
-            console.log("Delete error:", error);
-            Alert.alert("error", error.message);
-          }
-        },
-      },
-    ]
-  );
-};
+    try {
+      console.log("deleting report id:", selectedReport.id);
+      
+      const response = await fetch(`${BASE_URL}/api/reports/${selectedReport.id}`, {
+        method: "DELETE",
+      });
+
+      console.log("response status:", response.status);
+
+      if (response.status === 200) {
+        // Remove from local state immediately
+        setReports(prevReports => prevReports.filter(r => r.id !== selectedReport.id));
+        Alert.alert("success", "report deleted successfully");
+        setDeleteModalVisible(false);
+        setSelectedReport(null);
+      } else {
+        const text = await response.text();
+        console.log("response text:", text);
+        throw new Error("failed to delete report");
+      }
+      
+    } catch (error) {
+      console.log("delete error:", error);
+      Alert.alert("error", error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "unknown date";
@@ -251,7 +249,7 @@ const deleteReport = async (report) => {
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.deleteBtn} 
-                  onPress={() => deleteReport(item)}
+                  onPress={() => openDeleteModal(item)}
                 >
                   <Text style={styles.deleteBtnText}>delete</Text>
                 </TouchableOpacity>
@@ -392,6 +390,55 @@ const deleteReport = async (report) => {
                 </TouchableOpacity>
               </View>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* delete confirmation modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <View style={styles.deleteModalHeader}>
+              <Text style={styles.deleteModalTitle}>delete report</Text>
+            </View>
+
+            <View style={styles.deleteModalBody}>
+              <Text style={styles.deleteModalText}>
+                are you sure you want to delete this report for
+              </Text>
+              <Text style={styles.deleteModalModuleName}>
+                {selectedReport?.moduleName} ({selectedReport?.moduleCode})
+              </Text>
+              <Text style={styles.deleteModalWarning}>
+                this action cannot be undone
+              </Text>
+            </View>
+
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity 
+                style={[styles.deleteModalButton, styles.cancelDeleteButton]}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deleting}
+              >
+                <Text style={styles.cancelDeleteButtonText}>cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.deleteModalButton, styles.confirmDeleteButton, deleting && styles.disabledBtn]}
+                onPress={confirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.confirmDeleteButtonText}>delete</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -705,5 +752,94 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     textTransform: "lowercase",
+  },
+
+  // delete modal styles
+  deleteModalContent: {
+    backgroundColor: "#1e293b",
+    borderRadius: 20,
+    width: "85%",
+    overflow: "hidden",
+  },
+
+  deleteModalHeader: {
+    padding: 16,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+  },
+
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#fff",
+    textTransform: "lowercase",
+  },
+
+  deleteModalBody: {
+    padding: 20,
+    alignItems: "center",
+  },
+
+  deleteModalText: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    marginBottom: 10,
+    textTransform: "lowercase",
+  },
+
+  deleteModalModuleName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#facc15",
+    textAlign: "center",
+    marginBottom: 10,
+    textTransform: "lowercase",
+  },
+
+  deleteModalWarning: {
+    fontSize: 12,
+    color: "#ef4444",
+    textAlign: "center",
+    fontStyle: "italic",
+    textTransform: "lowercase",
+  },
+
+  deleteModalButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+  },
+
+  deleteModalButton: {
+    flex: 1,
+    padding: 14,
+    alignItems: "center",
+  },
+
+  cancelDeleteButton: {
+    backgroundColor: "#334155",
+    borderRightWidth: 1,
+    borderRightColor: "#334155",
+  },
+
+  cancelDeleteButtonText: {
+    color: "#e2e8f0",
+    fontWeight: "600",
+    textTransform: "lowercase",
+  },
+
+  confirmDeleteButton: {
+    backgroundColor: "#dc2626",
+  },
+
+  confirmDeleteButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    textTransform: "lowercase",
+  },
+
+  disabledBtn: {
+    opacity: 0.6,
   },
 });

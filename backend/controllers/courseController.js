@@ -339,19 +339,22 @@ const assignLecturerToModule = async (req, res) => {
   }
 };
 
-/* remove lecturer from module */
+// remove lecturer from module
 const removeLecturerFromModule = async (req, res) => {
   try {
     const { moduleId } = req.params;
+
+    if (!moduleId) {
+      return res.status(400).json({ message: "module id required" });
+    }
 
     const moduleRef = db.collection("modules").doc(moduleId);
     const moduleSnap = await moduleRef.get();
 
     if (!moduleSnap.exists) {
-      return res.status(404).json({ message: "Module not found" });
+      return res.status(404).json({ message: "module not found" });
     }
 
-    //remove lecturer details from module
     await moduleRef.update({
       lecturerId: "",
       lecturerName: "",
@@ -359,11 +362,14 @@ const removeLecturerFromModule = async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    console.log(`lecturer removed from module ${moduleId}`);
+
     return res.status(200).json({
-      message: "Lecturer removed successfully",
+      success: true,
+      message: "lecturer removed successfully",
     });
   } catch (error) {
-    console.error("Remove lecturer error:", error.message);
+    console.error("remove lecturer error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
