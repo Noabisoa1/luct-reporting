@@ -1,31 +1,57 @@
 const axios = require("axios");
 const { auth, db, admin } = require("../config/firebaseAdmin");
 
-/**
- * REGISTER USER
- */
+// register
 const registerUser = async (req, res) => {
   try {
     const { name, email, password, role, faculty, semester } = req.body;
 
+    // basic validation
     if (!name || !email || !password || !role) {
       return res.status(400).json({
-        message: "Name, email, password, and role are required",
+        message: "name, email, password, and role are required",
       });
+    }
+
+    // email validation
+    const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "invalid email format" });
+    }
+
+    // password validation
+    if (password.length < 6) {
+      return res.status(400).json({ message: "password must be at least 6 characters" });
     }
 
     const allowedRoles = ["student", "lecturer", "pl", "prl"];
 
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ message: "Invalid role" });
+      return res.status(400).json({ message: "invalid role" });
     }
 
+    // faculty is required for all roles
+    if (!faculty || faculty.trim() === "") {
+      return res.status(400).json({ message: "faculty is required for all roles" });
+    }
+
+    // semester validation for students
     if (role === "student") {
-      if (!faculty) {
-        return res.status(400).json({ message: "Faculty required for students" });
-      }
       if (!semester || semester < 1 || semester > 8) {
-        return res.status(400).json({ message: "Semester must be 1-8 for students" });
+        return res.status(400).json({ message: "semester must be between 1 and 8 for students" });
+      }
+    }
+
+    // check if user already exists
+    try {
+      const existingUser = await auth.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "user with this email already exists" });
+      }
+    } catch (err) {
+      // user doesn't exist, continue
+      if (err.code !== "auth/user-not-found") {
+        console.log("auth check error:", err.message);
       }
     }
 
@@ -42,8 +68,8 @@ const registerUser = async (req, res) => {
       name,
       email,
       role,
-      faculty: faculty || "",
-      semester: semester || "",
+      faculty: faculty,
+      semester: role === "student" ? semester : "",
       modules: [],
       registeredModules: [],
       isActive: true,
@@ -53,26 +79,40 @@ const registerUser = async (req, res) => {
 
     await db.collection("users").doc(uid).set(userData);
 
+    console.log(`user registered: ${email} as ${role}`);
+
     return res.status(201).json({
-      message: "User created successfully",
+      message: "user created successfully",
       uid,
     });
   } catch (error) {
-    console.error("Registration error:", error.message);
+    console.error("registration error:", error.message);
+    
+    // handle specific firebase auth errors
+    if (error.code === "auth/email-already-exists") {
+      return res.status(409).json({ message: "email already exists" });
+    }
+    if (error.code === "auth/invalid-email") {
+      return res.status(400).json({ message: "invalid email format" });
+    }
+    if (error.code === "auth/weak-password") {
+      return res.status(400).json({ message: "password is too weak" });
+    }
+    
     return res.status(500).json({
       message: error.message,
     });
   }
 };
 
-//LOGIN USER
+// login user
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password required",
+        message: "email and password required",
       });
     }
 
@@ -95,7 +135,7 @@ const loginUser = async (req, res) => {
     let userData;
 
     if (!userSnap.exists) {
-      console.log("User missing in Firestore, creating...");
+      console.log("user missing in firestore, creating...");
 
       userData = {
         uid: localId,
@@ -116,7 +156,7 @@ const loginUser = async (req, res) => {
       userData = userSnap.data();
       
       if (userData.isActive === false) {
-        return res.status(403).json({ message: "Account disabled. Contact admin." });
+        return res.status(403).json({ message: "account disabled. contact admin." });
       }
       
       await userRef.update({
@@ -124,9 +164,8 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // IMPORTANT: Return consistent user object
     return res.status(200).json({
-      uid: userData.uid,  // Make sure uid is included
+      uid: userData.uid,
       token: idToken,
       name: userData.name,
       email: userData.email,
@@ -139,18 +178,16 @@ const loginUser = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Login error:", error.response?.data?.error?.message || error.message);
+    console.error("login error:", error.response?.data?.error?.message || error.message);
     return res.status(401).json({
       message:
         error.response?.data?.error?.message ||
-        "Invalid email or password",
+        "invalid email or password",
     });
   }
 };
 
-/**
- * GET ALL USERS
- */
+// get all users
 const getUsers = async (req, res) => {
   try {
     const { role } = req.query;
@@ -170,29 +207,27 @@ const getUsers = async (req, res) => {
 
     return res.status(200).json(users);
   } catch (error) {
-    console.error("Get users error:", error.message);
+    console.error("get users error:", error.message);
     return res.status(500).json({
       message: error.message,
     });
   }
 };
 
-/**
- * GET USER BY ID
- */
+// get user by id
 const getUserById = async (req, res) => {
   try {
     const { uid } = req.params;
 
     if (!uid) {
-      return res.status(400).json({ message: "User ID required" });
+      return res.status(400).json({ message: "user id required" });
     }
 
     const userRef = db.collection("users").doc(uid);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "user not found" });
     }
 
     return res.status(200).json({
@@ -200,28 +235,26 @@ const getUserById = async (req, res) => {
       ...userSnap.data(),
     });
   } catch (error) {
-    console.error("Get user error:", error.message);
+    console.error("get user error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * UPDATE USER
- */
+// update user
 const updateUser = async (req, res) => {
   try {
     const { uid } = req.params;
     const { name, role, faculty, semester } = req.body;
 
     if (!uid) {
-      return res.status(400).json({ message: "User ID required" });
+      return res.status(400).json({ message: "user id required" });
     }
 
     const userRef = db.collection("users").doc(uid);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "user not found" });
     }
 
     const updates = {};
@@ -230,7 +263,7 @@ const updateUser = async (req, res) => {
     if (role) {
       const allowedRoles = ["student", "lecturer", "pl", "prl"];
       if (!allowedRoles.includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
+        return res.status(400).json({ message: "invalid role" });
       }
       updates.role = role;
     }
@@ -242,30 +275,28 @@ const updateUser = async (req, res) => {
     await userRef.update(updates);
 
     return res.status(200).json({
-      message: "User updated successfully",
+      message: "user updated successfully",
     });
   } catch (error) {
-    console.error("Update user error:", error.message);
+    console.error("update user error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * DELETE USER (Soft Delete)
- */
+// delete user (soft delete)
 const deleteUser = async (req, res) => {
   try {
     const { uid } = req.params;
 
     if (!uid) {
-      return res.status(400).json({ message: "User ID required" });
+      return res.status(400).json({ message: "user id required" });
     }
 
     const userRef = db.collection("users").doc(uid);
     const userSnap = await userRef.get();
 
     if (!userSnap.exists) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "user not found" });
     }
 
     await userRef.update({
@@ -276,85 +307,19 @@ const deleteUser = async (req, res) => {
     try {
       await auth.updateUser(uid, { disabled: true });
     } catch (authError) {
-      console.log("Could not disable auth user:", authError.message);
+      console.log("could not disable auth user:", authError.message);
     }
 
     return res.status(200).json({
-      message: "User disabled successfully",
+      message: "user disabled successfully",
     });
   } catch (error) {
-    console.error("Delete user error:", error.message);
+    console.error("delete user error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * REAL-TIME USER LISTENER (onSnapshot)
- */
-const subscribeToUsers = (uid, callback) => {
-  return db.collection("users").doc(uid).onSnapshot(
-    (doc) => {
-      if (doc.exists) {
-        callback(null, { id: doc.id, ...doc.data() });
-      } else {
-        callback("User not found", null);
-      }
-    },
-    (error) => {
-      console.error("Real-time listener error:", error.message);
-      callback(error, null);
-    }
-  );
-};
-
-/**
- * REAL-TIME ALL USERS LISTENER
- */
-const subscribeToAllUsers = (callback, roleFilter = null) => {
-  let query = db.collection("users");
-  
-  if (roleFilter) {
-    query = query.where("role", "==", roleFilter);
-  }
-  
-  return query.onSnapshot(
-    (snapshot) => {
-      const users = [];
-      snapshot.forEach((doc) => {
-        users.push({ id: doc.id, ...doc.data() });
-      });
-      callback(null, users);
-    },
-    (error) => {
-      console.error("Real-time users listener error:", error.message);
-      callback(error, null);
-    }
-  );
-};
-
-/**
- * FIRESTORE SECURITY RULES (Add to Firebase Console)
- */
-/*
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && 
-        (request.auth.uid == userId || 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pl', 'prl']);
-      allow delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['pl', 'prl'];
-    }
-  }
-}
-*/
-
-/**
- * LOGOUT USER
- */
+// logout user
 const logoutUser = async (req, res) => {
   try {
     const { uid } = req.body;
@@ -367,37 +332,35 @@ const logoutUser = async (req, res) => {
     }
     
     return res.status(200).json({
-      message: "Logged out successfully",
+      message: "logged out successfully",
     });
   } catch (error) {
-    console.error("Logout error:", error.message);
+    console.error("logout error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * CHANGE PASSWORD
- */
+// change password
 const changePassword = async (req, res) => {
   try {
     const { uid, currentPassword, newPassword } = req.body;
     
     if (!uid || !currentPassword || !newPassword) {
       return res.status(400).json({ 
-        message: "UID, current password, and new password required" 
+        message: "uid, current password, and new password required" 
       });
     }
     
     if (newPassword.length < 6) {
       return res.status(400).json({ 
-        message: "New password must be at least 6 characters" 
+        message: "new password must be at least 6 characters" 
       });
     }
     
     const userSnap = await db.collection("users").doc(uid).get();
     
     if (!userSnap.exists) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "user not found" });
     }
     
     const userEmail = userSnap.data().email;
@@ -413,29 +376,27 @@ const changePassword = async (req, res) => {
         }
       );
     } catch (error) {
-      return res.status(401).json({ message: "Current password is incorrect" });
+      return res.status(401).json({ message: "current password is incorrect" });
     }
     
     await auth.updateUser(uid, { password: newPassword });
     
     return res.status(200).json({ 
-      message: "Password updated successfully" 
+      message: "password updated successfully" 
     });
   } catch (error) {
-    console.error("Change password error:", error.message);
+    console.error("change password error:", error.message);
     return res.status(500).json({ message: error.message });
   }
 };
 
-/**
- * REFRESH TOKEN
- */
+// refresh token
 const refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
     
     if (!refreshToken) {
-      return res.status(400).json({ message: "Refresh token required" });
+      return res.status(400).json({ message: "refresh token required" });
     }
     
     const apiKey = "AIzaSyDfu64uC71n-koud4VYD3FTYrfiFl6CEQw";
@@ -456,9 +417,49 @@ const refreshToken = async (req, res) => {
       expiresIn: expires_in,
     });
   } catch (error) {
-    console.error("Refresh token error:", error.message);
-    return res.status(401).json({ message: "Invalid refresh token" });
+    console.error("refresh token error:", error.message);
+    return res.status(401).json({ message: "invalid refresh token" });
   }
+};
+
+// real-time user listener
+const subscribeToUsers = (uid, callback) => {
+  return db.collection("users").doc(uid).onSnapshot(
+    (doc) => {
+      if (doc.exists) {
+        callback(null, { id: doc.id, ...doc.data() });
+      } else {
+        callback("user not found", null);
+      }
+    },
+    (error) => {
+      console.error("real-time listener error:", error.message);
+      callback(error, null);
+    }
+  );
+};
+
+// real-time all users listener
+const subscribeToAllUsers = (callback, roleFilter = null) => {
+  let query = db.collection("users");
+  
+  if (roleFilter) {
+    query = query.where("role", "==", roleFilter);
+  }
+  
+  return query.onSnapshot(
+    (snapshot) => {
+      const users = [];
+      snapshot.forEach((doc) => {
+        users.push({ id: doc.id, ...doc.data() });
+      });
+      callback(null, users);
+    },
+    (error) => {
+      console.error("real-time users listener error:", error.message);
+      callback(error, null);
+    }
+  );
 };
 
 module.exports = {

@@ -82,7 +82,7 @@ export default function LecturerDashboard({ navigation }) {
   const menu = [
     { title: "Reports", screen: "LecturerReports" },
     { title: "Attendance", screen: "LecturerAttendance" },
-    { title: "Ratings", screen: "LecturerRatings" },
+    { title: "Ratings", screen: "LecturerRating" },
     { title: "Classes", screen: "LecturerClasses" },
     { title: "Create Report", screen: "LecturerReportForm" },
   ];

@@ -341,9 +341,9 @@ export default function LecturerReportForm() {
       {selectedModule && (
         <View style={styles.infoBox}>
           <Text style={styles.infoTitle}>module information</Text>
-          <Text style={styles.infoText}>📚 {selectedModule.moduleName}</Text>
-          <Text style={styles.infoText}>📖 code: {selectedModule.moduleCode}</Text>
-          <Text style={styles.infoText}>🏫 course: {selectedModule.courseName}</Text>
+          <Text style={styles.infoText}> {selectedModule.moduleName}</Text>
+          <Text style={styles.infoText}> code: {selectedModule.moduleCode}</Text>
+          <Text style={styles.infoText}> course: {selectedModule.courseName}</Text>
           
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
@@ -373,7 +373,7 @@ export default function LecturerReportForm() {
       {/* date picker */}
       <TouchableOpacity onPress={() => setShowDate(true)} style={styles.selector}>
         <Text style={styles.selectorText}>
-          📅 date: {date.toDateString()}
+           date: {date.toDateString()}
         </Text>
       </TouchableOpacity>
 
@@ -391,7 +391,7 @@ export default function LecturerReportForm() {
       {/* time picker */}
       <TouchableOpacity onPress={() => setShowTime(true)} style={styles.selector}>
         <Text style={styles.selectorText}>
-          🕐 time: {time.toTimeString().slice(0, 5)}
+          time: {time.toTimeString().slice(0, 5)}
         </Text>
       </TouchableOpacity>
 

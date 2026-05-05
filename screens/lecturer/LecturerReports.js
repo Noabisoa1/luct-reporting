@@ -152,37 +152,49 @@ export default function LecturerReports() {
   };
 
   const deleteReport = async (report) => {
-    Alert.alert(
-      "confirm delete",
-      `are you sure you want to delete the report for ${report.moduleName} (week ${report.week})?`,
-      [
-        { text: "cancel", style: "cancel" },
-        {
-          text: "delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const res = await fetch(`${BASE_URL}/api/reports/${report.id}`, {
-                method: "DELETE",
-              });
+  Alert.alert(
+    "confirm delete",
+    `are you sure you want to delete the report for ${report.moduleName}?`,
+    [
+      { text: "cancel", style: "cancel" },
+      {
+        text: "delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            console.log("deleting report id:", report.id);
+            
+            const response = await fetch(`${BASE_URL}/api/reports/${report.id}`, {
+              method: "DELETE",
+              headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+              },
+            });
 
-              const data = await res.json();
+            console.log("response status:", response.status);
+            
+            const result = await response.json();
+            console.log("response data:", result);
 
-              if (!res.ok) {
-                throw new Error(data.message || "failed to delete report");
-              }
-
-              Alert.alert("success", "report deleted successfully!");
-              fetchReports(); 
-            } catch (error) {
-              console.log("delete report error:", error.message);
-              Alert.alert("error", error.message);
+            if (!response.ok) {
+              throw new Error(result.message || "failed to delete");
             }
-          },
+
+            // Remove from local state
+            setReports(prevReports => prevReports.filter(r => r.id !== report.id));
+            
+            Alert.alert("success", "report deleted successfully");
+            
+          } catch (error) {
+            console.log("delete error:", error);
+            Alert.alert("error", error.message);
+          }
         },
-      ]
-    );
-  };
+      },
+    ]
+  );
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return "unknown date";
@@ -222,8 +234,7 @@ export default function LecturerReports() {
 
       {reports.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📄</Text>
-          <Text style={styles.empty}>no reports found</Text>
+          <Text style={styles.emptyText}>no reports found</Text>
           <Text style={styles.emptySubtext}>submit your first report from the report form</Text>
         </View>
       ) : (
@@ -263,10 +274,10 @@ export default function LecturerReports() {
               <Text style={styles.attendanceLabel}>attendance:</Text>
               <View style={styles.attendanceStats}>
                 <Text style={styles.presentCount}>
-                  ✅ present: {item.attendancePresent || 0}
+                  present: {item.attendancePresent || 0}
                 </Text>
                 <Text style={styles.totalCount}>
-                  📚 total: {item.totalStudents || 0}
+                  total: {item.totalStudents || 0}
                 </Text>
               </View>
               <View style={styles.rateContainer}>
@@ -573,12 +584,7 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
 
-  emptyIcon: {
-    fontSize: 50,
-    marginBottom: 10,
-  },
-
-  empty: {
+  emptyText: {
     textAlign: "center",
     marginTop: 20,
     color: "#94a3b8",
@@ -594,7 +600,6 @@ const styles = StyleSheet.create({
     textTransform: "lowercase",
   },
 
-  // modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.9)",

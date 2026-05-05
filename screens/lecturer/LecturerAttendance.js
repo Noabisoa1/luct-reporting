@@ -6,6 +6,7 @@ import {
   FlatList,
   Modal,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -245,120 +246,148 @@ export default function LecturerAttendance({ route, navigation }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#22c55e" />
-        <Text style={{ color: "#fff", marginTop: 10 }}>Loading modules...</Text>
+        <Text style={{ color: "#fff", marginTop: 10 }}>loading modules...</Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Lecturer Attendance</Text>
+  // MAIN VIEW - MODULES LIST
+  if (!selectedModule) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>lecturer attendance</Text>
 
-      <Text style={styles.subtitle}>Your Modules ({modules.length})</Text>
+        <Text style={styles.subtitle}>your modules ({modules.length})</Text>
 
-      <FlatList
-        data={modules}
-        keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
-        }
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No modules assigned to you. Please contact your PL.
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.card,
-              selectedModule?.id === item.id && styles.selected,
-            ]}
-            onPress={() => loadStudents(item)}
-          >
-            <Text style={styles.moduleName}>{item.moduleName}</Text>
-            <Text style={styles.moduleCode}>{item.moduleCode}</Text>
-            <Text style={styles.courseInfo}>
-              {item.courseName} {item.classYear}
+        <FlatList
+          data={modules}
+          keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
+          }
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              no modules assigned to you. please contact your pl.
             </Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      {selectedModule && (
-        <>
-          <Text style={styles.subtitle}>
-            Students ({stats.total}) | Present: {stats.present} | Absent: {stats.absent}
-          </Text>
-
-          <View style={styles.bulkActions}>
-            <TouchableOpacity 
-              style={[styles.bulkBtn, styles.bulkPresent]} 
-              onPress={() => markAll("present")}
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.card,
+                selectedModule?.id === item.id && styles.selected,
+              ]}
+              onPress={() => loadStudents(item)}
             >
-              <Text style={styles.bulkText}>All Present</Text>
+              <Text style={styles.moduleName}>{item.moduleName}</Text>
+              <Text style={styles.moduleCode}>{item.moduleCode}</Text>
+              <Text style={styles.courseInfo}>
+                {item.courseName} {item.classYear}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.bulkBtn, styles.bulkAbsent]} 
-              onPress={() => markAll("absent")}
-            >
-              <Text style={styles.bulkText}>All Absent</Text>
-            </TouchableOpacity>
-          </View>
+          )}
+        />
+      </View>
+    );
+  }
 
-          <FlatList
-            data={students}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No students registered for this module</Text>
-            }
-            renderItem={({ item }) => {
-              const status = attendance[item.id];
+  // ATTENDANCE VIEW - WITH BIG SCROLLVIEW
+  return (
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
+      }
+    >
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => setSelectedModule(null)} style={styles.backBtn}>
+        <Text style={styles.backBtnText}>← back to modules</Text>
+      </TouchableOpacity>
 
-              return (
-                <View style={styles.studentRow}>
-                  <Text style={styles.studentName}>{item.name}</Text>
-                  <Text style={styles.studentEmail}>{item.email}</Text>
+      <Text style={styles.title}>mark attendance</Text>
 
-                  <View style={styles.actions}>
-                    <TouchableOpacity
-                      style={[
-                        styles.btn,
-                        status === "present" && styles.present,
-                      ]}
-                      onPress={() => markAttendance(item.id, "present")}
-                    >
-                      <Text style={styles.icon}>P</Text>
-                    </TouchableOpacity>
+      {/* Module Info Card */}
+      <View style={styles.moduleInfoCard}>
+        <Text style={styles.selectedModuleName}>{selectedModule.moduleName}</Text>
+        <Text style={styles.selectedModuleCode}>code: {selectedModule.moduleCode}</Text>
+        <Text style={styles.selectedCourseInfo}>
+          {selectedModule.courseName} {selectedModule.classYear}
+        </Text>
+      </View>
 
-                    <TouchableOpacity
-                      style={[
-                        styles.btn,
-                        status === "absent" && styles.absent,
-                      ]}
-                      onPress={() => markAttendance(item.id, "absent")}
-                    >
-                      <Text style={styles.icon}>A</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            }}
-          />
+      {/* Attendance Stats */}
+      <Text style={styles.subtitle}>
+        students ({stats.total}) | present: {stats.present} | absent: {stats.absent}
+      </Text>
 
-          <TouchableOpacity
-            style={[styles.submitBtn, submitting && styles.disabledBtn]}
-            onPress={submitAttendance}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitText}>Submit Attendance</Text>
-            )}
-          </TouchableOpacity>
-        </>
+      {/* Bulk Actions */}
+      <View style={styles.bulkActions}>
+        <TouchableOpacity 
+          style={[styles.bulkBtn, styles.bulkPresent]} 
+          onPress={() => markAll("present")}
+        >
+          <Text style={styles.bulkText}>all present</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.bulkBtn, styles.bulkAbsent]} 
+          onPress={() => markAll("absent")}
+        >
+          <Text style={styles.bulkText}>all absent</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Students List */}
+      {students.length === 0 ? (
+        <Text style={styles.emptyText}>no students registered for this module</Text>
+      ) : (
+        students.map((item) => {
+          const status = attendance[item.id];
+          return (
+            <View key={item.id} style={styles.studentRow}>
+              <View style={styles.studentInfo}>
+                <Text style={styles.studentName}>{item.name}</Text>
+                <Text style={styles.studentEmail}>{item.email}</Text>
+              </View>
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[
+                    styles.btn,
+                    status === "present" && styles.present,
+                  ]}
+                  onPress={() => markAttendance(item.id, "present")}
+                >
+                  <Text style={styles.icon}>P</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.btn,
+                    status === "absent" && styles.absent,
+                  ]}
+                  onPress={() => markAttendance(item.id, "absent")}
+                >
+                  <Text style={styles.icon}>A</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })
       )}
 
+      {/* Submit Button */}
+      <TouchableOpacity
+        style={[styles.submitBtn, submitting && styles.disabledBtn]}
+        onPress={submitAttendance}
+        disabled={submitting}
+      >
+        {submitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.submitText}>submit attendance</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.footer} />
+
+      {/* Success Modal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -368,7 +397,7 @@ export default function LecturerAttendance({ route, navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Attendance Submitted!</Text>
+              <Text style={styles.modalTitle}>attendance submitted!</Text>
               <TouchableOpacity onPress={() => setShowSuccessModal(false)}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
@@ -381,25 +410,25 @@ export default function LecturerAttendance({ route, navigation }) {
                 </View>
 
                 <Text style={styles.moduleNameFeedback}>{submittedData.moduleName}</Text>
-                <Text style={styles.dateText}>Date: {submittedData.date}</Text>
+                <Text style={styles.dateText}>date: {submittedData.date}</Text>
 
                 <View style={styles.statsContainer}>
                   <View style={styles.statBox}>
                     <Text style={styles.statNumber}>{submittedData.total}</Text>
-                    <Text style={styles.statLabel}>Total Students</Text>
+                    <Text style={styles.statLabel}>total students</Text>
                   </View>
                   <View style={[styles.statBox, styles.presentBox]}>
                     <Text style={[styles.statNumber, styles.presentText]}>{submittedData.present}</Text>
-                    <Text style={styles.statLabel}>Present</Text>
+                    <Text style={styles.statLabel}>present</Text>
                   </View>
                   <View style={[styles.statBox, styles.absentBox]}>
                     <Text style={[styles.statNumber, styles.absentText]}>{submittedData.absent}</Text>
-                    <Text style={styles.statLabel}>Absent</Text>
+                    <Text style={styles.statLabel}>absent</Text>
                   </View>
                 </View>
 
                 <View style={styles.attendanceRate}>
-                  <Text style={styles.rateLabel}>Attendance Rate</Text>
+                  <Text style={styles.rateLabel}>attendance rate</Text>
                   <Text style={styles.rateValue}>
                     {((submittedData.present / submittedData.total) * 100).toFixed(1)}%
                   </Text>
@@ -417,14 +446,14 @@ export default function LecturerAttendance({ route, navigation }) {
                   style={styles.doneButton}
                   onPress={() => setShowSuccessModal(false)}
                 >
-                  <Text style={styles.doneButtonText}>Done</Text>
+                  <Text style={styles.doneButtonText}>done</Text>
                 </TouchableOpacity>
               </>
             )}
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -447,6 +476,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#facc15",
     marginBottom: 10,
+    textTransform: "lowercase",
   },
 
   subtitle: {
@@ -455,6 +485,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#94a3b8",
     marginBottom: 8,
+    textTransform: "lowercase",
+  },
+
+  backBtn: {
+    backgroundColor: "#334155",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 15,
+    alignSelf: "flex-start",
+  },
+
+  backBtnText: {
+    color: "#e2e8f0",
+    fontWeight: "600",
+    textTransform: "lowercase",
   },
 
   card: {
@@ -471,18 +517,51 @@ const styles = StyleSheet.create({
   moduleName: {
     color: "#e2e8f0",
     fontWeight: "700",
+    textTransform: "lowercase",
   },
 
   moduleCode: {
     color: "#94a3b8",
     fontSize: 12,
     marginTop: 4,
+    textTransform: "lowercase",
   },
 
   courseInfo: {
     color: "#facc15",
     fontSize: 11,
     marginTop: 6,
+    textTransform: "lowercase",
+  },
+
+  moduleInfoCard: {
+    backgroundColor: "#1e293b",
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+
+  selectedModuleName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#facc15",
+    marginBottom: 4,
+    textTransform: "lowercase",
+  },
+
+  selectedModuleCode: {
+    fontSize: 13,
+    color: "#94a3b8",
+    marginBottom: 4,
+    textTransform: "lowercase",
+  },
+
+  selectedCourseInfo: {
+    fontSize: 12,
+    color: "#cbd5e1",
+    textTransform: "lowercase",
   },
 
   studentRow: {
@@ -490,22 +569,30 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  studentInfo: {
+    flex: 1,
   },
 
   studentName: {
     color: "#e2e8f0",
     fontWeight: "600",
+    textTransform: "lowercase",
   },
 
   studentEmail: {
     color: "#94a3b8",
     fontSize: 12,
     marginTop: 2,
+    textTransform: "lowercase",
   },
 
   actions: {
     flexDirection: "row",
-    marginTop: 10,
     gap: 10,
   },
 
@@ -556,6 +643,7 @@ const styles = StyleSheet.create({
   bulkText: {
     color: "#fff",
     fontWeight: "600",
+    textTransform: "lowercase",
   },
 
   submitBtn: {
@@ -563,7 +651,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#22c55e",
     padding: 15,
     borderRadius: 14,
-    marginBottom: 30,
   },
 
   disabledBtn: {
@@ -574,12 +661,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     fontWeight: "800",
+    textTransform: "lowercase",
   },
 
   emptyText: {
     color: "#94a3b8",
     marginTop: 20,
     textAlign: "center",
+    textTransform: "lowercase",
+  },
+
+  footer: {
+    height: 30,
   },
 
   retryBtn: {
@@ -595,6 +688,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.8)",
@@ -620,6 +714,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     color: "#facc15",
+    textTransform: "lowercase",
   },
 
   modalClose: {
@@ -644,6 +739,7 @@ const styles = StyleSheet.create({
     color: "#e2e8f0",
     textAlign: "center",
     marginBottom: 5,
+    textTransform: "lowercase",
   },
 
   dateText: {
@@ -651,6 +747,7 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     textAlign: "center",
     marginBottom: 20,
+    textTransform: "lowercase",
   },
 
   statsContainer: {
@@ -694,6 +791,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#94a3b8",
     marginTop: 4,
+    textTransform: "lowercase",
   },
 
   attendanceRate: {
@@ -708,6 +806,7 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     marginBottom: 5,
     textAlign: "center",
+    textTransform: "lowercase",
   },
 
   rateValue: {
@@ -742,5 +841,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "800",
     fontSize: 16,
+    textTransform: "lowercase",
   },
 });

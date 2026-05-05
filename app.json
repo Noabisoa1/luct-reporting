@@ -19,11 +19,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.noabisoarycoh.LUCT"
     },
     "web": {
-  "output": "single"
-},
+      "output": "single"
+    },
     "plugins": [
       [
         "expo-splash-screen",
@@ -36,11 +37,18 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "037c2be4-eaf2-476a-85c1-c1ec560ebcfc"
+      }
     }
   }
 }

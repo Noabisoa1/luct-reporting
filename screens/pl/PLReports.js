@@ -2,12 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  View,
+  View
 } from "react-native";
 
 export default function PLReports() {
@@ -56,7 +56,6 @@ export default function PLReports() {
     try {
       setLoading(true);
       
-      // fetch all reports
       const res = await fetch(`${BASE_URL}/api/reports`);
       const data = await res.json();
 
@@ -66,15 +65,12 @@ export default function PLReports() {
 
       let reportsData = Array.isArray(data) ? data : [];
       
-      // filter reports that have PRL feedback
       reportsData = reportsData.filter(r => r.prlFeedback && r.prlFeedback.trim() !== "");
       
-      // filter by faculty if PL has faculty
       if (userData?.faculty) {
         reportsData = reportsData.filter(r => r.lecturerFaculty === userData.faculty);
       }
 
-      // sort by date (newest first)
       reportsData.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : 0;
         const dateB = b.createdAt ? new Date(b.createdAt) : 0;
@@ -145,8 +141,13 @@ export default function PLReports() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>pl reports & feedback</Text>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
+      }
+    >
+      <Text style={styles.title}>prl reports & feedback</Text>
       
       {userData && (
         <View style={styles.profileCard}>
@@ -166,22 +167,14 @@ export default function PLReports() {
 
       <Text style={styles.subtitle}>reports with feedback: {filteredReports.length}</Text>
 
-      <FlatList
-        data={filteredReports}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}></Text>
-            <Text style={styles.emptyText}>no reports with feedback</Text>
-            <Text style={styles.emptySubtext}>reports with prl feedback will appear here</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
+      {filteredReports.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>no reports with feedback</Text>
+          <Text style={styles.emptySubtext}>reports with prl feedback will appear here</Text>
+        </View>
+      ) : (
+        filteredReports.map((item) => (
+          <View key={item.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.moduleName}>{item.moduleName}</Text>
               <Text style={styles.moduleCode}>{item.moduleCode}</Text>
@@ -191,26 +184,26 @@ export default function PLReports() {
               {item.courseName} ({item.courseCode || "no code"})
             </Text>
 
-            <Text style={styles.lecturerName}> lecturer: {item.lecturerName}</Text>
-            <Text style={styles.facultyName}> faculty: {item.faculty || item.lecturerFaculty}</Text>
+            <Text style={styles.lecturerName}>lecturer: {item.lecturerName}</Text>
+            <Text style={styles.facultyName}>faculty: {item.faculty || item.lecturerFaculty}</Text>
 
             <View style={styles.row}>
-              <Text style={styles.meta}> week: {item.week}</Text>
-              <Text style={styles.meta}> date: {item.date}</Text>
+              <Text style={styles.meta}>week: {item.week}</Text>
+              <Text style={styles.meta}>date: {item.date}</Text>
             </View>
 
             <View style={styles.row}>
-              <Text style={styles.meta}> venue: {item.venue}</Text>
-              <Text style={styles.meta}> time: {item.scheduledTime}</Text>
+              <Text style={styles.meta}>venue: {item.venue}</Text>
+              <Text style={styles.meta}>time: {item.scheduledTime}</Text>
             </View>
 
-            <Text style={styles.sectionTitle}> topic</Text>
+            <Text style={styles.sectionTitle}>topic</Text>
             <Text style={styles.text}>{item.topic}</Text>
 
-            <Text style={styles.sectionTitle}> learning outcomes</Text>
+            <Text style={styles.sectionTitle}>learning outcomes</Text>
             <Text style={styles.text}>{item.learningOutcomes || "not provided"}</Text>
 
-            <Text style={styles.sectionTitle}> recommendations</Text>
+            <Text style={styles.sectionTitle}>recommendations</Text>
             <Text style={styles.text}>{item.recommendations || "not provided"}</Text>
 
             <View style={styles.attendanceBox}>
@@ -223,7 +216,7 @@ export default function PLReports() {
             </View>
 
             <View style={styles.feedbackBox}>
-              <Text style={styles.feedbackTitle}> prl feedback</Text>
+              <Text style={styles.feedbackTitle}>prl feedback</Text>
               <Text style={styles.feedbackText}>{item.prlFeedback}</Text>
             </View>
 
@@ -231,9 +224,11 @@ export default function PLReports() {
               submitted: {formatDate(item.createdAt)}
             </Text>
           </View>
-        )}
-      />
-    </View>
+        ))
+      )}
+
+      <View style={styles.footer} />
+    </ScrollView>
   );
 }
 
@@ -434,11 +429,6 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
 
-  emptyIcon: {
-    fontSize: 50,
-    marginBottom: 10,
-  },
-
   emptyText: {
     textAlign: "center",
     marginTop: 20,
@@ -453,5 +443,9 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 12,
     textTransform: "lowercase",
+  },
+
+  footer: {
+    height: 30,
   },
 });

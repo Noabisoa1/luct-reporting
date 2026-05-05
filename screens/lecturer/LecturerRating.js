@@ -3,13 +3,12 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const QUESTIONS = [
@@ -25,7 +24,7 @@ const QUESTIONS = [
   "Overall satisfaction",
 ];
 
-export default function LecturerRatings({ route, navigation }) {
+export default function LecturerRating({ route, navigation }) {
   const [ratings, setRatings] = useState([]);
   const [modules, setModules] = useState([]);
   const [selectedModule, setSelectedModule] = useState(null);
@@ -37,13 +36,11 @@ export default function LecturerRatings({ route, navigation }) {
 
   const getLecturerId = async () => {
     try {
-      // First try to get from route params
       if (route?.params?.user) {
         const user = route.params.user;
         return user.uid || user.id;
       }
       
-      // Then try from AsyncStorage
       const userJson = await AsyncStorage.getItem("user");
       if (userJson) {
         const user = JSON.parse(userJson);
@@ -95,7 +92,6 @@ export default function LecturerRatings({ route, navigation }) {
       const allRatings = data.ratings || [];
       setRatings(allRatings);
 
-      // Get unique modules from ratings
       const uniqueModules = [];
       const moduleMap = new Map();
       
@@ -168,12 +164,10 @@ export default function LecturerRatings({ route, navigation }) {
     const overall =
       averages.reduce((sum, val) => sum + parseFloat(val), 0) / QUESTIONS.length;
 
-    // Get anonymous ratings (remove student names)
     const anonymousRatings = moduleRatings.map((rating) => ({
       averageRating: rating.averageRating,
       comment: rating.comment,
       createdAt: rating.createdAt,
-      // No student name/email - anonymous
     }));
 
     return {
@@ -221,36 +215,34 @@ export default function LecturerRatings({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My Ratings</Text>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
+      }
+    >
+      <Text style={styles.title}>my ratings</Text>
       
       {userData && (
         <View style={styles.profileCard}>
           <Text style={styles.profileName}>{userData.name}</Text>
-          <Text style={styles.profileText}>Total Ratings Received: {ratings.length}</Text>
-          <Text style={styles.profileText}>Modules with Ratings: {modules.length}</Text>
+          <Text style={styles.profileText}>total ratings received: {ratings.length}</Text>
+          <Text style={styles.profileText}>modules with ratings: {modules.length}</Text>
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>Select Module</Text>
+      <Text style={styles.sectionTitle}>select module</Text>
 
-      <FlatList
-        data={modules}
-        keyExtractor={(item) => item.moduleId}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#22c55e"]} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>⭐</Text>
-            <Text style={styles.emptyText}>No ratings yet</Text>
-            <Text style={styles.emptySubtext}>
-              Students will rate your modules after attending your classes
-            </Text>
-          </View>
-        }
-        renderItem={({ item }) => {
+      {modules.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>⭐</Text>
+          <Text style={styles.emptyText}>no ratings yet</Text>
+          <Text style={styles.emptySubtext}>
+            students will rate your modules after attending your classes
+          </Text>
+        </View>
+      ) : (
+        modules.map((item) => {
           const moduleRatings = ratings.filter(r => r.moduleId === item.moduleId);
           const avgScore = moduleRatings.length > 0
             ? (moduleRatings.reduce((sum, r) => sum + (r.averageRating || 0), 0) / moduleRatings.length).toFixed(1)
@@ -258,6 +250,7 @@ export default function LecturerRatings({ route, navigation }) {
           
           return (
             <TouchableOpacity
+              key={item.moduleId}
               style={[
                 styles.card,
                 selectedModule?.moduleId === item.moduleId && styles.selected,
@@ -270,18 +263,18 @@ export default function LecturerRatings({ route, navigation }) {
                   <Text style={styles.ratingBadgeText}>⭐ {avgScore}</Text>
                 </View>
               </View>
-              <Text style={styles.moduleCode}>Code: {item.moduleCode}</Text>
-              <Text style={styles.courseName}>Course: {item.courseName}</Text>
+              <Text style={styles.moduleCode}>code: {item.moduleCode}</Text>
+              <Text style={styles.courseName}>course: {item.courseName}</Text>
               <Text style={styles.ratingCount}>
                 {moduleRatings.length} student{moduleRatings.length !== 1 ? "s" : ""} rated
               </Text>
             </TouchableOpacity>
           );
-        }}
-      />
+        })
+      )}
 
       {selectedModule && (
-        <ScrollView style={styles.results} showsVerticalScrollIndicator={false}>
+        <View style={styles.results}>
           {(() => {
             const data = calculateModuleAverages();
             if (!data) return null;
@@ -300,21 +293,21 @@ export default function LecturerRatings({ route, navigation }) {
                 <View style={styles.statsRow}>
                   <View style={styles.statItem}>
                     <Text style={styles.statNumber}>{data.count}</Text>
-                    <Text style={styles.statLabel}>Students Rated</Text>
+                    <Text style={styles.statLabel}>students rated</Text>
                   </View>
                   <View style={styles.statItem}>
                     <Text style={[styles.statNumber, { color: getRatingColor(data.overall) }]}>
                       {data.overall}
                     </Text>
-                    <Text style={styles.statLabel}>Overall Score</Text>
+                    <Text style={styles.statLabel}>overall score</Text>
                   </View>
                 </View>
 
                 <View style={styles.progressSection}>
-                  <Text style={styles.progressTitle}>Rating Breakdown</Text>
+                  <Text style={styles.progressTitle}>rating breakdown</Text>
                   {data.averages.map((score, i) => (
                     <View key={i} style={styles.progressRow}>
-                      <Text style={styles.progressQuestion}>Q{i + 1}</Text>
+                      <Text style={styles.progressQuestion}>q{i + 1}</Text>
                       <View style={styles.progressBarContainer}>
                         <View 
                           style={[
@@ -337,10 +330,9 @@ export default function LecturerRatings({ route, navigation }) {
                   </Text>
                 </View>
 
-                {/* Anonymous Student Comments */}
                 {data.anonymousRatings.some(r => r.comment && r.comment.trim()) && (
                   <View style={styles.commentsSection}>
-                    <Text style={styles.commentsTitle}>Student Feedback (Anonymous)</Text>
+                    <Text style={styles.commentsTitle}>student feedback (anonymous)</Text>
                     {data.anonymousRatings.map((rating, idx) => (
                       rating.comment && rating.comment.trim() && (
                         <View key={idx} style={styles.commentCard}>
@@ -357,9 +349,11 @@ export default function LecturerRatings({ route, navigation }) {
               </View>
             );
           })()}
-        </ScrollView>
+        </View>
       )}
-    </View>
+
+      <View style={styles.footer} />
+    </ScrollView>
   );
 }
 
@@ -387,6 +381,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#facc15",
     marginBottom: 12,
+    textTransform: "lowercase",
   },
 
   sectionTitle: {
@@ -394,6 +389,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#e2e8f0",
     marginBottom: 10,
+    textTransform: "lowercase",
   },
 
   profileCard: {
@@ -410,16 +406,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#f8fafc",
     marginBottom: 4,
+    textTransform: "lowercase",
   },
 
   profileText: {
     color: "#94a3b8",
     fontSize: 13,
     marginTop: 2,
-  },
-
-  list: {
-    paddingBottom: 10,
+    textTransform: "lowercase",
   },
 
   card: {
@@ -449,18 +443,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#f1f5f9",
     flex: 1,
+    textTransform: "lowercase",
   },
 
   moduleCode: {
     fontSize: 12,
     color: "#94a3b8",
     marginBottom: 4,
+    textTransform: "lowercase",
   },
 
   courseName: {
     fontSize: 12,
     color: "#cbd5e1",
     marginBottom: 6,
+    textTransform: "lowercase",
   },
 
   ratingBadge: {
@@ -479,11 +476,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#94a3b8",
     marginTop: 4,
+    textTransform: "lowercase",
   },
 
   results: {
     marginTop: 15,
-    marginBottom: 30,
+    marginBottom: 20,
   },
 
   summaryBox: {
@@ -506,6 +504,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#facc15",
     textAlign: "center",
+    textTransform: "lowercase",
   },
 
   summarySubtitle: {
@@ -513,6 +512,7 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     textAlign: "center",
     marginTop: 4,
+    textTransform: "lowercase",
   },
 
   statsRow: {
@@ -538,6 +538,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#94a3b8",
     marginTop: 4,
+    textTransform: "lowercase",
   },
 
   progressSection: {
@@ -549,6 +550,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#e2e8f0",
     marginBottom: 10,
+    textTransform: "lowercase",
   },
 
   progressRow: {
@@ -562,6 +564,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#94a3b8",
+    textTransform: "lowercase",
   },
 
   progressBarContainer: {
@@ -599,6 +602,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#cbd5e1",
     fontStyle: "italic",
+    textTransform: "lowercase",
   },
 
   commentsSection: {
@@ -610,6 +614,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#e2e8f0",
     marginBottom: 10,
+    textTransform: "lowercase",
   },
 
   commentCard: {
@@ -659,6 +664,7 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontSize: 16,
     fontWeight: "500",
+    textTransform: "lowercase",
   },
 
   emptySubtext: {
@@ -666,5 +672,10 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 12,
     marginTop: 8,
+    textTransform: "lowercase",
+  },
+
+  footer: {
+    height: 30,
   },
 });

@@ -236,7 +236,13 @@ const deleteReport = async (req, res) => {
   try {
     const { reportId } = req.params;
 
+    console.log("=== DELETE REQUEST RECEIVED ===");
+    console.log("reportId:", reportId);
+    console.log("request method:", req.method);
+    console.log("request url:", req.url);
+
     if (!reportId) {
+      console.log("no report id provided");
       return res.status(400).json({ success: false, message: "report id required" });
     }
 
@@ -244,12 +250,13 @@ const deleteReport = async (req, res) => {
     const reportSnap = await reportRef.get();
 
     if (!reportSnap.exists) {
+      console.log("report not found in database");
       return res.status(404).json({ success: false, message: "report not found" });
     }
 
+    console.log("report found, deleting...");
     await reportRef.delete();
-
-    console.log(`report ${reportId} deleted successfully`);
+    console.log("report deleted successfully");
 
     return res.status(200).json({
       success: true,
@@ -257,6 +264,7 @@ const deleteReport = async (req, res) => {
     });
   } catch (error) {
     console.error("delete report error:", error.message);
+    console.error("error stack:", error.stack);
     return res.status(500).json({ success: false, message: error.message });
   }
 };
