@@ -23,16 +23,6 @@ export default function PLCreateCourse() {
     setModules([...modules, { moduleName: "", moduleCode: "" }]);
   };
 
-  const removeModuleField = (index) => {
-    if (modules.length === 1) {
-      Alert.alert("Error", "At least one module is required");
-      return;
-    }
-    const updated = [...modules];
-    updated.splice(index, 1);
-    setModules(updated);
-  };
-
   const updateModule = (index, field, value) => {
     const updated = [...modules];
     updated[index][field] = value;
@@ -124,9 +114,6 @@ export default function PLCreateCourse() {
         <View key={index} style={styles.moduleBox}>
           <View style={styles.moduleHeader}>
             <Text style={styles.moduleTitle}>Module {index + 1}</Text>
-            <TouchableOpacity onPress={() => removeModuleField(index)}>
-              <Text style={styles.removeText}>Remove</Text>
-            </TouchableOpacity>
           </View>
 
           <TextInput

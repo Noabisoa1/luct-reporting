@@ -159,7 +159,7 @@ export default function PLAssignLecturers() {
 
       if (!res.ok) throw new Error(data.message || "failed to unassign lecturer");
 
-      Alert.alert("success", `removed ${moduleToUnassign.lecturerName} from ${moduleToUnassign.moduleName}`);
+      Alert.alert("success", `unassigned ${moduleToUnassign.lecturerName} from ${moduleToUnassign.moduleName}`);
 
       setUnassignModalVisible(false);
       setModuleToUnassign(null);
@@ -272,7 +272,7 @@ export default function PLAssignLecturers() {
                   style={[styles.actionBtn, styles.unassignBtn]}
                   onPress={() => openUnassignModal(m)}
                 >
-                  <Text style={styles.actionBtnText}>remove lecturer</Text>
+                  <Text style={styles.actionBtnText}>unassign</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -343,12 +343,12 @@ export default function PLAssignLecturers() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>remove lecturer</Text>
+              <Text style={styles.modalTitle}>unassign lecturer</Text>
             </View>
 
             <View style={styles.modalBody}>
               <Text style={styles.modalText}>
-                are you sure you want to remove
+                are you sure you want to unassign
               </Text>
               <Text style={styles.modalLecturerName}>
                 {moduleToUnassign?.lecturerName}
@@ -380,7 +380,7 @@ export default function PLAssignLecturers() {
                 {unassigning ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.confirmBtnText}>remove</Text>
+                  <Text style={styles.confirmBtnText}>unassign</Text>
                 )}
               </TouchableOpacity>
             </View>
